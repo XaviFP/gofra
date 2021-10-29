@@ -1,0 +1,110 @@
+/*
+xmpp_echo is a demo client that connect on an XMPP server and echo message received back to original sender.
+*/
+
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"gofra/gofra"
+	"net/http"
+	"strings"
+)
+
+type plugin string
+const commandStr = "assetinfo"
+const metadataPrefix = "https://api.cryptowat.ch/assets/"
+const metadataSufix = "/metadata"
+const defaultAsset = "btc"
+
+var g gofra.API
+var config gofra.Config
+
+func (p plugin) Name() string {
+	return "CryptoAssetInfo"
+}
+
+func (p plugin) Description() string {
+	return "Provides a brief description of crypto assets"
+}
+
+func (p plugin) Init(conf gofra.Config, api gofra.API) {
+	g = api
+	config = conf
+	g.Subscribe(
+		"command/assetinfo",
+		p.Name(),
+		handleAssetInfo,
+		gofra.Options{},
+	)
+}
+
+func handleAssetInfo(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
+	var r gofra.Reply
+	asset := defaultAsset
+	argLine := e.Payload["commandBody"].(string)
+	args := strings.Split(argLine, " ")
+	if args[0] != config.Extra["commandChar"].(string) + commandStr {
+		r = gofra.Reply{Ok: false, Empty: false}
+		r.SetAnswer("Wrong command")
+		return r, e 
+	}
+	//Remove command and leave just the args for it
+	args = args[1:]
+	if argLine != "" {
+		if len(args) > 1 {
+			//return "Too many arguments"
+		} else if len(args) == 1 {
+			asset = args[0]
+		}
+	}
+	resp, err := http.Get(metadataPrefix + asset + metadataSufix)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		r = gofra.Reply{Ok: true, Empty: false}
+		r.SetAnswer("Something went wrong")
+		return r, e
+	}
+	var result map[string]interface{}
+	fmt.Println(resp.Body)
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		r = gofra.Reply{Ok: true, Empty: false}
+		r.SetAnswer("Invalid response")
+		return r, e
+	}
+	
+	aux := result["result"]
+	resultMap := aux.(map[string]interface{})
+	payload, ok := resultMap[asset]
+	if !ok {
+		r = gofra.Reply{Ok: true, Empty: false}
+		r.SetAnswer("Asset not found")
+		return r, e
+	}
+	payloadMap := payload.(map[string]interface{})
+	description, ok := payloadMap["AssetDescription"]
+	if !ok  {
+		r = gofra.Reply{Ok: true, Empty: false}
+		r.SetAnswer("No description for " + asset + " yet")
+		return r, e
+	}
+	descriptionString := description.(string)
+	if descriptionString == "" {
+		r = gofra.Reply{Ok: true, Empty: false}
+		r.SetAnswer("No description for " + asset + " yet")
+		return r, e
+	}
+	fmt.Println(result)
+	
+	r = gofra.Reply{Ok: true, Empty: false}
+		r.SetAnswer(descriptionString)
+		return r, e
+}
+
+var Plugin plugin
