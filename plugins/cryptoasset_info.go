@@ -6,10 +6,11 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
-	"gofra/gofra"
+	"log"
 	"net/http"
 	"strings"
+
+	"gofra/gofra"
 )
 
 type plugin string
@@ -62,7 +63,7 @@ func handleAssetInfo(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	resp, err := http.Get(metadataPrefix + asset + metadataSufix)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	defer resp.Body.Close()
 
@@ -72,7 +73,7 @@ func handleAssetInfo(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 		return r, e
 	}
 	var result map[string]interface{}
-	fmt.Println(resp.Body)
+	log.Println(resp.Body)
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer("Invalid response")
@@ -100,7 +101,7 @@ func handleAssetInfo(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 		r.SetAnswer("No description for " + asset + " yet")
 		return r, e
 	}
-	fmt.Println(result)
+	log.Println(result)
 	
 	r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer(descriptionString)

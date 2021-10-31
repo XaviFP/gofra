@@ -6,7 +6,8 @@ package main
 
 import (
 	"fmt"
-	
+	"log"
+
 	"gofra/gofra"
 	"strings"
 
@@ -48,7 +49,7 @@ func (p plugin) Init(conf gofra.Config, api gofra.API) {
 
 func prepareMUCs () {
 	if len(config.Mucs) == 0 {
-		fmt.Println("No MUCs in config: ", config)
+		log.Printf("No MUCs in config: %v", config)
 		return
 	}
 	for _, muc := range config.Mucs {
@@ -59,7 +60,7 @@ func prepareMUCs () {
 func handlePresence(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	pres, ok := e.Stanza.(stanza.Presence)
 	if !ok {
-		fmt.Println("Ignoring packet: %T\n", e.Stanza)
+		log.Println("Ignoring packet: %T\n", e.Stanza)
 		return gofra.Reply{Empty: true}, e
 	}
 	occupantNick := ""
@@ -71,11 +72,11 @@ func handlePresence(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	}
 	_, exists := mucs[mucJid]
 	if !exists {
-		fmt.Println("MUC " + mucJid + " not found in config")
+		log.Println("MUC " + mucJid + " not found in config")
 		return gofra.Reply{Ok: false, Empty: true}, e
 	}
 
-	fmt.Println("Joined MUCs: ", joinedMucs)
+	log.Println("Joined MUCs: ", joinedMucs)
 	occupants, exist := joinedMucs[mucJid]
 	if !exist {
 		joinedMucs[mucJid] = []string{}
@@ -159,8 +160,8 @@ func joinMUC(mc gofra.MucConfig){
 	mucJoinPres := mucJoinPresence(config.Jid, mc.Nick, mc.MucJid, mc.MucJoinHistory)
 	err := g.SendStanza(mucJoinPres)
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("Couldn't send presence stanza to join muc " + mc.MucJid)
+		log.Println(err)
+		fmt.Printf("Couldn't send presence stanza to join muc %s", mc.MucJid)
 	}
 }
 

@@ -5,11 +5,12 @@ remind is a gofra plugin that allows users to set text-based reminders for thems
 package main
 
 import (
-	"fmt"
-	"gofra/gofra"
+	"log"
 	"sort"
 	"strings"
 	"time"
+
+	"gofra/gofra"
 
 	"gosrc.io/xmpp/stanza"
 )
@@ -47,7 +48,7 @@ func (p plugin) Init(c gofra.Config, api gofra.API) {
 		handleReminder,
 		gofra.Options{},
 	)
-	g.Subscribe(
+/* 	g.Subscribe(
 		"connected",
 		p.Name(),
 		sayHello,
@@ -64,22 +65,20 @@ func (p plugin) Init(c gofra.Config, api gofra.API) {
 		p.Name(),
 		joined,
 		gofra.Options{Priority: 0},
-	)
+	) */
 }
 
 
-func joined(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
+/* func joined(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	if e.Name == "mucJoined"{
-		fmt.Println("I JOINED A ROOM")
 		err := g.Send("vaulor@blastersklan.com", "I JOINED A ROOM", stanza.MessageTypeChat)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	} else {
-		fmt.Println("SOMEONE JOINED A ROOM")
 		err := g.Send("vaulor@blastersklan.com", "SOMEONE JOINED A ROOM", stanza.MessageTypeChat)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}
 	return gofra.Reply{Empty: true}, e
@@ -90,23 +89,21 @@ func sayHello(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	// shigoto@agora.blastersklan.com/Vaulor !remind klisahfdliasufgdh chat
 	err := g.Send("vaulor@blastersklan.com", "Initialized and sending", stanza.MessageTypeChat)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	return gofra.Reply{Empty: true}, e
-}
+} */
 
 func (p plugin) Run() {
-	fmt.Println("Running . . .")
 	for {
 		time.Sleep(1 * time.Second) // wait 1 sec
 		now := time.Now()
 		segs := now.Unix()
-		/* fmt.Println(segs) */
 		if len(reminders) < 1 {
 			continue
 		}
 		rmdr := reminders[0]
-		fmt.Println(rmdr.time, segs)
+		log.Println(rmdr.time, segs)
 		if rmdr.time > segs {
 			continue
 		}
@@ -145,7 +142,6 @@ func handleReminder(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	segs := now.Unix()
 	rmdr := reminder{time: segs + 10, to: msg.From, from: msg.From, msg: msg.Body, msgType: stanza.MessageTypeChat}
 	reminders = append(reminders, rmdr)
-	fmt.Println(reminders)
 	r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer("Reminder added")
 		return r, e

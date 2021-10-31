@@ -6,7 +6,7 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -70,14 +70,14 @@ func handlePrice(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 		}
 	}
 	requestUrl := metadataPrefix + exchange + "/" + pair + metadataSufix
-	fmt.Println(requestUrl)
+	log.Println(requestUrl)
 	resp, err := http.Get(requestUrl)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	defer resp.Body.Close()
-	fmt.Println(resp.Body)
+	log.Println(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer("Something went wrong")
@@ -102,7 +102,7 @@ func handlePrice(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	priceFloat := priceField.(float64)
 	price := strconv.FormatFloat(priceFloat, 'f', -1, 64)
 
-	fmt.Println(price)
+	log.Println(price)
 
 	r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer(price)

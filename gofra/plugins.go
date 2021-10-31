@@ -1,7 +1,6 @@
 package gofra
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"plugin"
@@ -58,17 +57,16 @@ func isPlugin(fileName string) (Plugin, bool) {
 	}
 	// load module
 	// 1. open the so file to load the symbols
-	//fmt.Println(plugins_path + name)
 	plug, err := plugin.Open(fileName)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, false
 	}
 	// 2. look up a symbol (an exported function or variable)
 	// in this case, variable Plugin
 	symPlugin, err := plug.Lookup("Plugin")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, false
 	}
 	// 3. Assert that loaded symbol is of a desired type
@@ -76,10 +74,10 @@ func isPlugin(fileName string) (Plugin, bool) {
 	var botPlugin Plugin
 	botPlugin, ok := symPlugin.(Plugin)
 	if !ok {
-		fmt.Println("unexpected type from module symbol")
+		log.Printf("unexpected type from module symbol in file %s", fileName)
 		return nil, false
 	}
-	fmt.Println(botPlugin.Name(), " is a plugin")
+	log.Printf("file %s contains plugin %s", fileName,botPlugin.Name())
 	return botPlugin, true
 }
 
@@ -93,19 +91,19 @@ func (p Plugins)loadAll(config Config, gofra API) error {
 		// Load the plugin
 		plug, err := plugin.Open(plug)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			return nil
 		}
 		// 2. look up a symbol (an exported function or variable)
 		// in this case, variable Plugin
 		symPlugin, err := plug.Lookup("Plugin")
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			return nil
 		}
 		gofraPlugin, ok := symPlugin.(Plugin)
 		if !ok {
-			fmt.Println("unexpected type from module symbol")
+			log.Println("unexpected type from module symbol")
 			return nil
 		}
 		

@@ -56,7 +56,7 @@ func (g *Gofra) SendStanza(s stanza.Packet) error {
 // event values are received through the event pointer argument where changes are expecteted
 // to be performed in order for the following chained handlers to recieve them.
 func (g *Gofra) Subscribe(eventName, pluginName string, handler Handler, options Options) {
-	fmt.Println("Plugin "+pluginName+" subscribed to event "+eventName)
+	log.Println("Plugin "+pluginName+" subscribed to event "+eventName)
 	g.events.Subscribe(eventName, pluginName, handler, options)
 }
 
@@ -98,7 +98,7 @@ func (g *Gofra) Connect() error{
 
 	// Connection manager handles reconnect policy automatically.
 	cm := xmpp.NewStreamManager(g.client, nil)
-	fmt.Println(cm)
+	log.Println(cm)
 	//log.Fatal(cm.Run())
 	return nil
 }
@@ -111,7 +111,7 @@ func handlePresence(s xmpp.Sender, p stanza.Packet) {
 		return
 	} 
 	_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", pres.Name(), pres.From)
-	fmt.Println(gofra.Publish(
+	log.Println(gofra.Publish(
 		Event{
 			Name: "presenceReceived",
 			Payload: make(map[string]interface{}),
