@@ -1,5 +1,5 @@
 /*
-remind is a plugin for goxbot that provides an api to check cryptocurrency pair prices
+remind is a gofra plugin that allows users to set text-based reminders for themselves or other users
 */
 
 package main
@@ -51,19 +51,19 @@ func (p plugin) Init(c gofra.Config, api gofra.API) {
 		"connected",
 		p.Name(),
 		sayHello,
-		gofra.Options{0},
+		gofra.Options{Priority: 0},
 	)
 	g.Subscribe(
 		"occupantJoinedMuc",
 		p.Name(),
 		joined,
-		gofra.Options{0},
+		gofra.Options{Priority: 0},
 	)
 	g.Subscribe(
 		"mucJoined",
 		p.Name(),
 		joined,
-		gofra.Options{0},
+		gofra.Options{Priority: 0},
 	)
 }
 

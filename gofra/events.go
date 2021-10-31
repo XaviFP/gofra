@@ -1,31 +1,44 @@
 package gofra
 
 import (
-	"errors"
+	"fmt"
 	"sort"
 )
 
 type Events map[string][]EventHandler
 
-func (e Events) Subscribe(eventName, pluginName string, handler Handler, options Options){
+func (e Events) Subscribe(eventName, pluginName string, handler Handler, op Options){
 	if e[eventName] == nil {
 		e[eventName] = []EventHandler{}
 	}
 	e[eventName] = append(
 		e[eventName],
-		EventHandler{Handler: handler, Priority: options.Priority},
+		EventHandler{
+			Handler: handler,
+			Priority: op.Priority,
+			PluginName: pluginName,
+			Chain: op.Chain,
+		},
 	)
-	// Find out smart/elegant way to name and find events in the code
-	e.Publish(Event{Name:"addedEventListener", Payload: nil, Stanza: nil})
+
+	event := Event{
+		Name:"addedEventListener",
+		Payload: map[string]interface{}{
+			"event": eventName,
+			"plugin": pluginName,
+			"chained": op.Chain,
+			"priority": op.Priority,
+		},
+	}
+	e.Publish(event)
 }
 
 func (e Events) Publish(event Event) Reply{
-	// Find out event chainning, unhandled events and whatnot
 	handlers, exist := e[event.Name]
 	var reply Reply
 	if !exist {
 		//No handlers for event
-		r := Reply{Reply: make(map[string]interface{}), Ok: false, Empty: false}
+		r := Reply{Payload: make(map[string]interface{}), Ok: false, Empty: false}
 		r.SetNoHandlers(true)
 		return r
 	}
@@ -55,10 +68,10 @@ func NewEvents(config Config) Events {
 }
 
 func (e Events) SetPriority(eventName, pluginName string, options Options) error{
-	priorityChanged := false
-	pluginFound := false
+	var priorityChanged bool
+	var pluginFound bool
 	handlers := e[eventName]
-	if handlers == nil {return errors.New("event {} not found")}
+	if handlers == nil {return fmt.Errorf("event %s not found", eventName)}
 	for _, element := range handlers {
 		if element.PluginName == pluginName {
 			pluginFound = true
@@ -70,21 +83,18 @@ func (e Events) SetPriority(eventName, pluginName string, options Options) error
 		}
 	}
 	if !pluginFound {
-		// "no '<eventName>' handler found for plugin '<pluginName>'"
-		return errors.New("no {} handler found for plugin {}")
+		return fmt.Errorf("no %s handler found for plugin %s", eventName, pluginName)
 	}
-	// Following code might not necessarily be an error per se
 	if !priorityChanged {
-		// "'<pluginName>' plugin's '<eventName>' handler had same priority previously"
-		//return errors.New("{} plugin's {} handler had same priority previously")
+		// If a given handler for a plugin had the same priority before, then do nothing
 		return nil
 	}
 	sortByPriority(handlers)
 	return nil
 }
 
+// Sorts handlers in descending priority order
 func sortByPriority(handlers []EventHandler){
-	// Sort handlers in descending priority
 	sort.Slice(handlers, func(i, j int) bool {
 		return handlers[i].Priority > handlers[j].Priority
 	})

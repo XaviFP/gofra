@@ -4,16 +4,21 @@ import (
 	"gosrc.io/xmpp/stanza"
 )
 
+// Interface to be satisfied by any gofra plugin
 type Plugin interface {
 	Name() string
 	Description() string
 	Init(Config, API)
 }
 
+// Interface to be satisfied by plugins that need an execution loop
+// like, for example, an HTTP server. Run method is executed as a goroutine.
 type Runnable interface {
 	Run()
 }
 
+// Interface providing plugins the needed tools to interact with the engine
+// and/or other plugins
 type API interface {
 	Send(to, message string, msgType stanza.StanzaType) error
 	Subscribe(eventName, pluginName string, handler Handler, options Options)
@@ -35,6 +40,7 @@ type Config struct {
 	Extra map[string]interface{}
 }
 
+// Per-MUC configuration
 type MucConfig struct {
 	Nick string
 	MucJoinHistory int
@@ -44,6 +50,7 @@ type MucConfig struct {
 type Send func(to, message string, msgType stanza.StanzaType) error
 
 //////////////////// EVENTS ////////////////////
+
 type Handler func(event Event, accumulated *Event) (Reply, Event)
 
 type EventHandler struct {
@@ -61,26 +68,29 @@ type Event struct {
 
 type Options struct {
 	Priority int64
+	Chain bool
 }
 
 type Reply struct{
-	Reply map[string]interface{}
+	Payload map[string]interface{}
 	Ok bool
 	Empty bool
 } 
 
+// Data access interface for text-based commands to answer to a suitable message.
 func (r *Reply) SetAnswer(answer string) {
-	if r.Reply == nil {
-		r.Reply = make(map[string]interface{})
+	if r.Payload == nil {
+		r.Payload = make(map[string]interface{})
 	}
-	r.Reply["answer"] = answer
+	r.Payload["answer"] = answer
 }
 
+// Data access interface for command plugin to receive the answer from an specific command.
 func (r *Reply) GetAnswer() string {
-	if r.Reply == nil {
-		r.Reply = make(map[string]interface{})
+	if r.Payload == nil {
+		r.Payload = make(map[string]interface{})
 	}
-	answer, exists := r.Reply["answer"]
+	answer, exists := r.Payload["answer"]
 	if !exists {
 		return ""
 	}
@@ -92,17 +102,17 @@ func (r *Reply) GetAnswer() string {
 }
 
 func (r *Reply) SetNoHandlers(noHandlers bool) {
-	if r.Reply == nil {
-		r.Reply = make(map[string]interface{})
+	if r.Payload == nil {
+		r.Payload = make(map[string]interface{})
 	}
-	r.Reply["noHandlers"] = noHandlers
+	r.Payload["noHandlers"] = noHandlers
 }
 
 func (r *Reply) GetNoHandlers() bool {
-	if r.Reply == nil {
-		r.Reply = make(map[string]interface{})
+	if r.Payload == nil {
+		r.Payload = make(map[string]interface{})
 	}
-	noHandlers, exists := r.Reply["noHandlers"]
+	noHandlers, exists := r.Payload["noHandlers"]
 	if !exists {
 		return false
 	}

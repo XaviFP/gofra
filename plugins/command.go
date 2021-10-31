@@ -1,3 +1,7 @@
+/*
+command is a gofra plugin that makes it easy to create text-based plugin commands
+*/
+
 package main
 
 import (
@@ -19,7 +23,7 @@ func (p plugin) Name() string {
 }
 
 func (p plugin) Description() string {
-	return "Makes easy to create text-based plugin commands"
+	return "Makes it easy to create text-based plugin commands"
 }
 
 func (p plugin) Init(config gofra.Config, api gofra.API) {
@@ -30,7 +34,7 @@ func (p plugin) Init(config gofra.Config, api gofra.API) {
 		"messageReceived",
 		p.Name(),
 		handleMessage,
-		gofra.Options{9999},
+		gofra.Options{Priority: 9999},
 	)
 }
 
@@ -47,7 +51,6 @@ func handleMessage(e gofra.Event, acc *gofra.Event) (gofra.Reply, gofra.Event) {
 		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", e.Stanza)
 		return gofra.Reply{nil, false, true}, e
 	}
-	//_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", msg.Body, msg.From)
 	if msg.Body == "" {
 		return gofra.Reply{nil, false, true}, e
 	}
@@ -66,7 +69,7 @@ func handleMessage(e gofra.Event, acc *gofra.Event) (gofra.Reply, gofra.Event) {
 	event := gofra.Event{eventName, e.Payload, e.Stanza}
 	reply := g.Publish(event)
 	
-	if !reply.Empty && reply.Ok && reply.Reply != nil{
+	if !reply.Empty && reply.Ok && reply.Payload != nil{
 		r := stanza.Message{Attrs: stanza.Attrs{To: to, Type: msgType}, Body: reply.GetAnswer()}
 		_ = g.SendStanza(r)
 	}

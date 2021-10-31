@@ -1,5 +1,5 @@
 /*
-muc is a gofra plugin that allows to connect to muti-user chatrooms
+muc is a gofra plugin that allows joining muti-user chatrooms and keeps track of them
 */
 
 package main

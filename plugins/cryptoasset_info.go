@@ -1,5 +1,5 @@
 /*
-xmpp_echo is a demo client that connect on an XMPP server and echo message received back to original sender.
+cryptoasset_info is a gofra plugin that provides a brief description of crypto currency assets
 */
 
 package main

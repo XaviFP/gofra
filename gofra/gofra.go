@@ -35,22 +35,32 @@ func NewGofra(config Config) *Gofra {
 
 ///////////////////// API ////////////////////
 
+// Send function wrapper to make sending messages easier
 func (g *Gofra) Send(to, message string, msgType stanza.StanzaType) error {
 	reply := stanza.Message{Attrs: stanza.Attrs{To: to, Type: msgType}, Body: message}
 	err := g.client.Send(reply)
 	return err
 }
 
+
 func (g *Gofra) SendStanza(s stanza.Packet) error {
 	err := g.client.Send(s)
 	return err
 }
 
+// Adds an event listener for a given event. Event listeners are executed in descending
+// priority order, so a higher priority grants earlier execution in the queue.
+// For accumulative handlers, that is, handlers that take the original set of values of
+// the event and pass on a modified set, there's the chain option. Handlers set to chain
+// are executed after all non-accumulative ones by descending priority order. Accumulated
+// event values are received through the event pointer argument where changes are expecteted
+// to be performed in order for the following chained handlers to recieve them.
 func (g *Gofra) Subscribe(eventName, pluginName string, handler Handler, options Options) {
 	fmt.Println("Plugin "+pluginName+" subscribed to event "+eventName)
 	g.events.Subscribe(eventName, pluginName, handler, options)
 }
 
+// Executes all event handlers subscribed to a particular event
 func (g *Gofra) Publish(event Event) Reply{
 	defer func() {
         if err := recover(); err != nil {
@@ -67,32 +77,33 @@ func (g *Gofra) SetPriority(eventName, pluginName string, options Options) error
 //////////////// INTERNAL ////////////////
 
 func (g *Gofra) Init() error{
+	// Initialize just once
 	if initialized {return nil}
 	initialized = true
+
 	//Initialize plugins
 	err := g.plugins.Init(g.config, g); if err != nil {return err}
 	g.Publish(Event{Name: "initialized"})
-	//Connect XMPP client
-	err = g.Connect(); if err != nil {return err}
-	g.Publish(Event{Name: "connected"})
-	// If you pass the client to a connection manager, it will handle the reconnect policy
-	// for you automatically.
-	cm := xmpp.NewStreamManager(g.client, nil)
-	fmt.Println(cm)
-	log.Fatal(cm.Run())
 	return nil
 }
 
 func (g *Gofra) Connect() error{
-	//Connect
+	//Connect XMPP client
 	err := g.client.Connect()
 	if err != nil {
 		log.Fatalf("%+v", err)
 		return err
 	}
+	g.Publish(Event{Name: "connected"})
+
+	// Connection manager handles reconnect policy automatically.
+	cm := xmpp.NewStreamManager(g.client, nil)
+	fmt.Println(cm)
+	//log.Fatal(cm.Run())
 	return nil
 }
 
+// Entry point for presence stanzas
 func handlePresence(s xmpp.Sender, p stanza.Packet) {
 	pres, ok := p.(stanza.Presence)
 	if !ok {
@@ -108,12 +119,14 @@ func handlePresence(s xmpp.Sender, p stanza.Packet) {
 		}))
 }
 
+// Entry point for message stanzas
 func handleMessage(s xmpp.Sender, p stanza.Packet) {
 	msg, ok := p.(stanza.Message)
 	if !ok {
 		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", p)
 		return
 	}
+
 	gofra.Publish(
 		Event{
 			Name: "messageReceived",
@@ -142,13 +155,12 @@ func newXmppClient(config Config) *xmpp.Client {
 		Jid:          config.Jid,
 		Credential:   xmpp.Password(config.Password),
 		StreamLogger: os.Stdout,
-		Insecure:     true,
-		// TLSConfig: tls.Config{InsecureSkipVerify: true},
 	}
+
 	router := xmpp.NewRouter()
 	router.HandleFunc("presence", handlePresence)
 	router.HandleFunc("message", handleMessage)
-	var err error
+
 	client, err := xmpp.NewClient(&xmppConfig, router, errorHandler)
 	if err != nil {
 		log.Fatalf("%+v", err)
@@ -157,5 +169,5 @@ func newXmppClient(config Config) *xmpp.Client {
 }
 
 func errorHandler(err error) {
-	fmt.Println(err.Error())
+	log.Println(err.Error())
 }

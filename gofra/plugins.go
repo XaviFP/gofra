@@ -26,21 +26,21 @@ func getPluginsInPaths(paths []string) ([]string, error) {
 		defer func() {
 			err := file.Close()
 			if err != nil {
-				log.Fatal(err)
+				log.Print(err)
 			}
 		}()
 		if err != nil {
-			log.Fatalf("failed opening directory: %s", err)
+			log.Printf("failed opening directory: %s", err)
 			return nil, err
 		}
 		
 		list, err := file.Readdirnames(0)
 		if err != nil {
-			log.Fatalf("failed reading plugins: %s", err)
+			log.Printf("failed reading plugins: %s", err)
 			return nil, err
 		}
 		if len(list) == 0 {
-			log.Fatalf("no plugins found in: %s", path)
+			log.Printf("no plugins found in: %s", path)
 			return plugins, nil
 		}
 		for _, name := range list {
@@ -121,20 +121,22 @@ func (p Plugins)loadAll(config Config, gofra API) error {
 	return nil
 }
 
-func safelyRun(pluginName string, plugin Runnable) {
-	defer func() {
-        if err := recover(); err != nil {
-            log.Println("run method of plugin " + pluginName +" failed:", err)
-        }
-    }()
-	plugin.Run()
-}
-
+// Wrapper to prevent a plugin initialization error from bleeding into the bot engine
 func safelyInit(plugin Plugin, config Config, gofra API) {
 	defer func() {
         if err := recover(); err != nil {
-            log.Println("init method of plugin " + plugin.Name() +" failed:", err)
+            log.Printf("init method of plugin %s failed: %s", plugin.Name(), err)
         }
     }()
 	plugin.Init(config, gofra)
+}
+
+// Wrapper to prevent a plugin execution error from bleeding into the bot engine
+func safelyRun(pluginName string, plugin Runnable) {
+	defer func() {
+        if err := recover(); err != nil {
+			log.Printf("Run method of plugin %s failed: %s", pluginName, err)
+        }
+    }()
+	plugin.Run()
 }

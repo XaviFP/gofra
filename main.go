@@ -6,13 +6,10 @@ package main
 
 import (
 	gofra "gofra/gofra"
-	"fmt"
-	"os"
-
+	"log"
 )
 
-// Configuration options that will be set when deploying
-
+// Configuration options that will be set when deploying.
 // Will be loaded from deployment/config file
 var config = gofra.Config{
 	ServerURL: "blastersklan.com",
@@ -34,13 +31,21 @@ var g *gofra.Gofra
 func main() {
 	conf, err := getConfig()
 	if err != nil {
-		//log wrong config and exit
-		os.Exit(1)
+		// Log wrong config and exit
+		log.Fatal(err.Error())
 	}
 	
 	g = gofra.NewGofra(conf)
 	err = g.Init()
-	fmt.Println(err)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	err = g.Connect()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	// Auto re-connect etc
+	for{}
 }
 
 func getConfig() (gofra.Config, error) {
