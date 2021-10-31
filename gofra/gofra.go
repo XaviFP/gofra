@@ -1,7 +1,6 @@
 package gofra
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -41,7 +40,6 @@ func (g *Gofra) Send(to, message string, msgType stanza.StanzaType) error {
 	err := g.client.Send(reply)
 	return err
 }
-
 
 func (g *Gofra) SendStanza(s stanza.Packet) error {
 	err := g.client.Send(s)
@@ -107,10 +105,10 @@ func (g *Gofra) Connect() error{
 func handlePresence(s xmpp.Sender, p stanza.Packet) {
 	pres, ok := p.(stanza.Presence)
 	if !ok {
-		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", p)
+		log.Printf("Ignoring packet: %T\n", p)
 		return
 	} 
-	_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", pres.Name(), pres.From)
+	log.Printf("Body = %s - from = %s\n", pres.Name(), pres.From)
 	log.Println(gofra.Publish(
 		Event{
 			Name: "presenceReceived",
@@ -123,7 +121,7 @@ func handlePresence(s xmpp.Sender, p stanza.Packet) {
 func handleMessage(s xmpp.Sender, p stanza.Packet) {
 	msg, ok := p.(stanza.Message)
 	if !ok {
-		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", p)
+		log.Printf("Ignoring packet: %T\n", p)
 		return
 	}
 
@@ -133,19 +131,8 @@ func handleMessage(s xmpp.Sender, p stanza.Packet) {
 			Payload: make(map[string]interface{}),
 			Stanza: p,
 	})
-	_, _ = fmt.Fprintf(os.Stdout, "Body = %s - from = %s\n", msg.Body, msg.From)
+	log.Printf("Body = %s - from = %s\n", msg.Body, msg.From)
 }
-
-/* client := xmpp.Config{
-	TransportConfiguration: xmpp.TransportConfiguration{
-		Address: "blastersklan.com:5222",
-	},
-	Jid:          "golang@blastersklan.com",
-	Credential:   xmpp.Password("1234"),
-	StreamLogger: os.Stdout,
-	Insecure:     true,
-	// TLSConfig: tls.Config{InsecureSkipVerify: true},
-} */
 
 func newXmppClient(config Config) *xmpp.Client {
 	xmppConfig := xmpp.Config{

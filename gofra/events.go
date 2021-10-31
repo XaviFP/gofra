@@ -55,8 +55,9 @@ func (e Events) Publish(event Event) Reply{
 			}
 		}
 	}
-	//TODO Deep copy event, following code is a placeholder
-	acc := event
+
+	var acc Event
+	Clone(event, acc)
 	for _, handler := range chainedHandlers {
 		_, _ = handler.Handler(event, &acc)
 	}
