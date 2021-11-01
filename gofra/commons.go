@@ -30,16 +30,15 @@ type API interface {
 }
 
 type Config struct {
-	ServerURL string
-	ServerPort string
-	//Temporary
-	Password string
-	Plugins_paths []string
-	Jid string
-	Nick string
-	Mucs []MucConfig
-	MucJoinHistory int64
-	Extra map[string]interface{}
+	ServerURL string `yaml:"serverUrl"`
+	ServerPort string`yaml:"serverUrl"`
+	Password string `yaml:"password"`
+	PluginPaths []string `yaml:"pluginPaths"`
+	Jid string `yaml:"jid"`
+	Nick string `yaml:"nick"`
+	Mucs []MucConfig `yaml:"mucConfigs"`
+	Plugins map[string]interface{} `yaml:"plugins"`
+	Extra map[string]interface{} `yaml:"extra"`
 }
 
 // Per-MUC configuration
@@ -63,9 +62,9 @@ type EventHandler struct {
 }
 
 type Event struct {
-	Name string
-	Payload map[string]interface{}
-	Stanza stanza.Packet
+	Name string `json:"name"`
+	Payload map[string]interface{} `json:"payload"`
+	Stanza stanza.Packet `json:"stanza"`
 }
 
 type Options struct {

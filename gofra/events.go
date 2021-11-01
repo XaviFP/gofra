@@ -57,7 +57,7 @@ func (e Events) Publish(event Event) Reply{
 	}
 
 	var acc Event
-	Clone(event, acc)
+	Clone(&event, &acc)
 	for _, handler := range chainedHandlers {
 		_, _ = handler.Handler(event, &acc)
 	}

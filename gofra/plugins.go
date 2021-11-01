@@ -82,7 +82,7 @@ func isPlugin(fileName string) (Plugin, bool) {
 }
 
 func (p Plugins)loadAll(config Config, gofra API) error {
-	pluginList, err := getPluginsInPaths(config.Plugins_paths)
+	pluginList, err := getPluginsInPaths(config.PluginPaths)
 	if err != nil {
 		return err
 	}
