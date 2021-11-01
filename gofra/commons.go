@@ -1,8 +1,6 @@
 package gofra
 
 import (
-	"encoding/json"
-	"log"
 	"gosrc.io/xmpp/stanza"
 )
 
@@ -62,9 +60,9 @@ type EventHandler struct {
 }
 
 type Event struct {
-	Name string `json:"name"`
-	Payload map[string]interface{} `json:"payload"`
-	Stanza stanza.Packet `json:"stanza"`
+	Name string
+	Payload map[string]interface{}
+	Stanza stanza.Packet
 }
 
 type Options struct {
@@ -77,18 +75,6 @@ type Reply struct{
 	Ok bool
 	Empty bool
 } 
-
-// Clone deepcopies a to b using json marshaling
-func Clone(a, b interface{}) {
-    bytes, err := json.Marshal(a)
-	if err != nil {
-		log.Print(err)
-	}
-    err = json.Unmarshal(bytes, b)
-	if err != nil {
-		log.Print(err)
-	}
-}
 
 // Data access interface for text-based commands to answer to a suitable message.
 func (r *Reply) SetAnswer(answer string) {
