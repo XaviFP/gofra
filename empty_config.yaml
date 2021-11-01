@@ -1,16 +1,17 @@
 serverUrl: ""
 serverPort: ""
 password: ""
-pluginPaths: ""
+pluginPaths:
+  - "plugins/"
 jid: ""
 nick: ""
-mucConfigs:
-  -mucNick: ""
-  -mucJoinHistory: ""
-  -mucJid: ""
+mucs:
+  - mucNick: ""
+    mucJoinHistory: 0
+    mucJid: ""
 
 plugins:
-  -Commands:
+  Commands:
     commandChar: "!"
 
 extra:
