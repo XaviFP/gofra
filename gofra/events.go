@@ -56,6 +56,9 @@ func (e Events) Publish(event Event) Reply{
 		}
 	}
 
+	if len(chainedHandlers) < 1 {
+		return reply
+	}
 	var acc Event
 	Clone(&event, &acc)
 	for _, handler := range chainedHandlers {

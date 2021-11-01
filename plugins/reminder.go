@@ -122,7 +122,7 @@ func handleReminder(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	 * !remind [target] [time] message:[message]
 	 * !remind [message]
 	 */
-	 if args[0] != config.Extra["commandChar"].(string) + commandStr {
+	 if args[0] != config.Plugins["Commands"]["commandChar"].(string) + commandStr {
 		r = gofra.Reply{Ok: false, Empty: false}
 		r.SetAnswer("Wrong command")
 		return r, e 

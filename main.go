@@ -5,38 +5,39 @@ gofra is an XMPP bot engine.
 package main
 
 import (
-	gofra "gofra/gofra"
+	"flag"
+	"io/ioutil"
 	"log"
+
+	gofra "gofra/gofra"
+
+	"gopkg.in/yaml.v3"
 )
 
-// Configuration options that will be set when deploying.
-// Will be loaded from deployment/config file
-var config = gofra.Config{
-	ServerURL: "blastersklan.com",
-	ServerPort: "5222",
-	Password: "1234",
-	Plugins_paths: []string{"plugins/"},
-	Jid: "golang@blastersklan.com",
-	Nick: "Gofra",
-	Mucs: []gofra.MucConfig{
-		{Nick: "gofra",
-		MucJoinHistory: 0,
-		MucJid: "shigoto@agora.blastersklan.com",},
-	},
-	MucJoinHistory: 0,
-	Extra: make(map[string]interface{}),
+var config gofra.Config
+var g *gofra.Gofra
+
+func init() {
+	configFilePathPtr := flag.String("config", "config.yaml", "file path of the config.yml file")
+	flag.Parse()
+
+	loadConfig(*configFilePathPtr)
 }
 
-var g *gofra.Gofra
-func main() {
-	conf, err := getConfig()
+func loadConfig(configFilePath string) {
+	yamlFile, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		// Log wrong config and exit
-		log.Fatal(err.Error())
+		log.Fatalln("Error reading config file", err)
 	}
-	
-	g = gofra.NewGofra(conf)
-	err = g.Init()
+
+	if err := yaml.Unmarshal(yamlFile, &config); err != nil {
+		log.Fatalf("Unmarshal: %v", err)
+	}
+}
+
+func main() {
+	g = gofra.NewGofra(config)
+	err := g.Init()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -45,12 +46,6 @@ func main() {
 		log.Fatal(err.Error())
 	}
 	// Auto re-connect etc
-	for{}
-}
-
-func getConfig() (gofra.Config, error) {
-	//config := commons.Config{}
-	// . . .
-	// . . .
-	return config, nil
+	for {
+	}
 }

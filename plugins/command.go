@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"gofra/gofra"
+	"log"
 	"os"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 
 type plugin string
 const defaultCommandChar = "!"
+const name = "Commands"
 var g gofra.API
 var c gofra.Config
 
@@ -28,7 +30,6 @@ func (p plugin) Description() string {
 
 func (p plugin) Init(config gofra.Config, api gofra.API) {
 	c = config
-	checkConfig(c)
 	g = api
 	g.Subscribe(
 		"messageReceived",
@@ -36,12 +37,18 @@ func (p plugin) Init(config gofra.Config, api gofra.API) {
 		handleMessage,
 		gofra.Options{Priority: 9999},
 	)
+	checkConfig(c)
 }
 
 func checkConfig(config gofra.Config) {
-	commandChar, exists := config.Extra["commandChar"]
+	log.Print(config)
+	pluginConfig, exists := config.Plugins[name]
+	if !exists {
+		config.Plugins[name] = map[string]interface{}{"commandChar": defaultCommandChar}
+	}
+	commandChar, exists := pluginConfig["commandChar"]
 	if !exists || commandChar.(string) == "" {
-		config.Extra["commandChar"] = defaultCommandChar
+		config.Plugins[name]["commandChar"] = defaultCommandChar
 	}
 }
 
@@ -55,7 +62,7 @@ func handleMessage(e gofra.Event, acc *gofra.Event) (gofra.Reply, gofra.Event) {
 		return gofra.Reply{nil, false, true}, e
 	}
 	command := ""
-	if strings.HasPrefix(msg.Body, c.Extra["commandChar"].(string)) {
+	if strings.HasPrefix(msg.Body, c.Plugins[name]["commandChar"].(string)) {
 		command = strings.Split(msg.Body, " ")[0][1:]
 	}
 	msgType := stanza.MessageTypeChat

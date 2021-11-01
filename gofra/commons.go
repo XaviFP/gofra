@@ -31,21 +31,21 @@ type API interface {
 
 type Config struct {
 	ServerURL string `yaml:"serverUrl"`
-	ServerPort string`yaml:"serverUrl"`
+	ServerPort string`yaml:"serverPort"`
 	Password string `yaml:"password"`
 	PluginPaths []string `yaml:"pluginPaths"`
 	Jid string `yaml:"jid"`
 	Nick string `yaml:"nick"`
-	Mucs []MucConfig `yaml:"mucConfigs"`
-	Plugins map[string]interface{} `yaml:"plugins"`
+	Mucs []MucConfig `yaml:"mucs"`
+	Plugins map[string]map[string]interface{} `yaml:"plugins"`
 	Extra map[string]interface{} `yaml:"extra"`
 }
 
 // Per-MUC configuration
 type MucConfig struct {
-	Nick string
-	MucJoinHistory int
-	MucJid string
+	Nick string `yaml:"mucNick"`
+	MucJoinHistory int `yaml:"mucJoinHistory"`
+	MucJid string `yaml:"mucJid"`
 }
 
 type Send func(to, message string, msgType stanza.StanzaType) error
