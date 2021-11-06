@@ -32,7 +32,7 @@ func NewGofra(config Config) *Gofra {
 	return gofra
 }
 
-///////////////////// API ////////////////////
+///////////////////// API ///////////////////////
 
 // Send function wrapper to make sending messages easier
 func (g *Gofra) Send(to, message string, msgType stanza.StanzaType) error {
@@ -72,7 +72,7 @@ func (g *Gofra) SetPriority(eventName, pluginName string, options Options) error
 	return g.events.SetPriority(eventName, pluginName, options)
 }
 
-//////////////// INTERNAL ////////////////
+/////////////////////////////////////////////////
 
 func (g *Gofra) Init() error{
 	// Initialize just once
