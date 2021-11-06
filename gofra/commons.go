@@ -46,9 +46,7 @@ type MucConfig struct {
 	MucJid string `yaml:"mucJid"`
 }
 
-type Send func(to, message string, msgType stanza.StanzaType) error
-
-//////////////////// EVENTS ////////////////////
+//////////////////// EVENTS /////////////////////
 
 type Handler func(event Event, accumulated *Event) (Reply, Event)
 
