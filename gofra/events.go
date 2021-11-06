@@ -20,7 +20,7 @@ func (e Events) Subscribe(eventName, pluginName string, handler Handler, op Opti
 			Chain: op.Chain,
 		},
 	)
-
+	e.sortByPriority(eventName)
 	event := Event{
 		Name:"addedEventListener",
 		Payload: map[string]interface{}{
@@ -73,13 +73,15 @@ func NewEvents(config Config) Events {
 func (e Events) SetPriority(eventName, pluginName string, options Options) error{
 	var priorityChanged bool
 	var pluginFound bool
-	handlers := e[eventName]
-	if handlers == nil {return fmt.Errorf("event %s not found", eventName)}
-	for _, element := range handlers {
+	_, exist := e[eventName]
+	if !exist {
+		return fmt.Errorf("event %s not found", eventName)
+	}
+	for i, element := range e[eventName] {
 		if element.PluginName == pluginName {
 			pluginFound = true
 			if element.Priority != options.Priority {
-				element.Priority = options.Priority
+				e[eventName][i].Priority = options.Priority
 				priorityChanged = true
 			}
 			break
@@ -92,13 +94,13 @@ func (e Events) SetPriority(eventName, pluginName string, options Options) error
 		// If a given handler for a plugin had the same priority before, then do nothing
 		return nil
 	}
-	sortByPriority(handlers)
+	e.sortByPriority(eventName)
 	return nil
 }
 
 // Sorts handlers in descending priority order
-func sortByPriority(handlers []EventHandler){
-	sort.Slice(handlers, func(i, j int) bool {
-		return handlers[i].Priority > handlers[j].Priority
+func (e Events)sortByPriority(eventName string){
+	sort.Slice(e[eventName], func(i, j int) bool {
+		return e[eventName][i].Priority > e[eventName][j].Priority
 	})
 }
