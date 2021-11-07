@@ -91,11 +91,11 @@ func (p Plugins)loadAll(config Config, gofra API) error {
 	return nil
 }
 
-func (p Plugins) loadPlugin(plug string, config Config, gofra API) error {
+func (p Plugins) loadPlugin(plug string, config Config, gofra API) bool {
 	gofraPlugin, ok := isPlugin(plug)
 	if !ok {
 		log.Printf("file %s does not contain a plugin", plug)
-		return nil
+		return false
 	}
 
 	p[gofraPlugin.Name()] = gofraPlugin
@@ -106,7 +106,7 @@ func (p Plugins) loadPlugin(plug string, config Config, gofra API) error {
 	if ok {
 		go safelyRun(gofraPlugin.Name(), gofraPlugin.(Runnable))
 	}
-	return nil
+	return true
 }
 
 // Wrapper to prevent a plugin initialization error from bleeding into the bot engine
