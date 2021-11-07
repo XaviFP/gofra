@@ -13,4 +13,6 @@ build_test_plugins:
 	go build -buildmode=plugin -o test_plugins/bin/normie.so test_plugins/normie.go
 	go build -buildmode=plugin -o test_plugins/bin/not_really.so test_plugins/not_really.go
 
-all: build build_plugins build_test_plugins
+all: build build_plugins
+
+test: build build_test_plugins
