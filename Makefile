@@ -8,4 +8,9 @@ build_plugins:
 	go build -buildmode=plugin -o bin/plugins/reminder.so plugins/reminder.go
 	go build -buildmode=plugin -o bin/plugins/pairs_price.so plugins/pairs_price.go
 
-all: build build_plugins
+build_test_plugins:
+	go build -buildmode=plugin -o test_plugins/bin/naughty.so test_plugins/naughty.go
+	go build -buildmode=plugin -o test_plugins/bin/normie.so test_plugins/normie.go
+	go build -buildmode=plugin -o test_plugins/bin/not_really.so test_plugins/not_really.go
+
+all: build build_plugins build_test_plugins
