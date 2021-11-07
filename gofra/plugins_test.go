@@ -53,7 +53,7 @@ func TestIsPlugin(t *testing.T) {
 	}
 	_, ok = isPlugin(test_plugins_path + "normie.so")
 	if !ok {
-		t.Error(`not_really should be a valid plugin`)
+		t.Error(`normie should be a valid plugin`)
 	}
 	_, ok = isPlugin(test_plugins_path + "naughty.so")
 	if !ok {
