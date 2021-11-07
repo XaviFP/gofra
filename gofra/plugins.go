@@ -18,8 +18,8 @@ func NewPlugins(config Config) Plugins {
 	return make(Plugins)
 }
 
-func getPluginsInPaths(paths []string) ([]string, error) {
-	plugins := make([]string, 0)
+func getFileNamesInPaths(paths []string) ([]string, error) {
+	files := make([]string, 0)
 	for _, path := range paths {
 		file, err := os.Open(path)
 		defer func() {
@@ -40,15 +40,13 @@ func getPluginsInPaths(paths []string) ([]string, error) {
 		}
 		if len(list) == 0 {
 			log.Printf("no plugins found in: %s", path)
-			return plugins, nil
+			return files, nil
 		}
 		for _, name := range list {
-			_, ok := isPlugin(path + name); if ok {
-				plugins = append(plugins, path + name)
-			}
+			files = append(files, path + name)
 		}
 	}
-	return plugins, nil
+	return files, nil
 }
 
 func isPlugin(fileName string) (Plugin, bool) {
@@ -77,44 +75,36 @@ func isPlugin(fileName string) (Plugin, bool) {
 		log.Printf("unexpected type from module symbol in file %s", fileName)
 		return nil, false
 	}
-	log.Printf("file %s contains plugin %s", fileName,botPlugin.Name())
+
 	return botPlugin, true
 }
 
 func (p Plugins)loadAll(config Config, gofra API) error {
-	pluginList, err := getPluginsInPaths(config.PluginPaths)
+	fileList, err := getFileNamesInPaths(config.PluginPaths)
 	if err != nil {
 		return err
 	}
 
-	for _, plug := range pluginList {
-		// Load the plugin
-		plug, err := plugin.Open(plug)
-		if err != nil {
-			log.Println(err)
-			return nil
-		}
-		// 2. look up a symbol (an exported function or variable)
-		// in this case, variable Plugin
-		symPlugin, err := plug.Lookup("Plugin")
-		if err != nil {
-			log.Println(err)
-			return nil
-		}
-		gofraPlugin, ok := symPlugin.(Plugin)
-		if !ok {
-			log.Println("unexpected type from module symbol")
-			return nil
-		}
-		
-		p[gofraPlugin.Name()] = gofraPlugin
+	for _, plug := range fileList {
+		p.loadPlugin(plug, config, gofra)
+	}
+	return nil
+}
 
-		safelyInit(gofraPlugin, config, gofra)
+func (p Plugins) loadPlugin(plug string, config Config, gofra API) error {
+	gofraPlugin, ok := isPlugin(plug)
+	if !ok {
+		log.Printf("file %s does not contain a plugin", plug)
+		return nil
+	}
 
-		_, ok = gofraPlugin.(Runnable)
-		if ok {
-			go safelyRun(gofraPlugin.Name(), gofraPlugin.(Runnable))
-		}
+	p[gofraPlugin.Name()] = gofraPlugin
+
+	safelyInit(gofraPlugin, config, gofra)
+
+	_, ok = gofraPlugin.(Runnable)
+	if ok {
+		go safelyRun(gofraPlugin.Name(), gofraPlugin.(Runnable))
 	}
 	return nil
 }
