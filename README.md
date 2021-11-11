@@ -8,7 +8,7 @@ TBD
 Fields of the config file and convention for per-plugin configuration  
 
 
-##Building & running tests
+## Building & running tests
 --------------------------
 
 To build:  
@@ -25,13 +25,13 @@ make tests
 go test -p=1 -coverprofile=coverage.out  && go tool cover -html=coverage.out
 ```
 
-##Creating plugins
+## Creating plugins
 -----------------------
 
 Easiest way is to copy the example plugin template and build from there.
 
 
-##Engine events list
+## Engine events list
 --------------------
 
 - Connected
@@ -41,7 +41,7 @@ Easiest way is to copy the example plugin template and build from there.
 - IQReceived
 - EventSubscribed
 
-##Available plugin event list
+## Available plugin event list
 -----------------------------
 
 - Command/commandName
