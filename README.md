@@ -1,6 +1,6 @@
 # gofra, an XMPP bot engine 
 
-##Config
+## Config
 --------
 
 TBD  
