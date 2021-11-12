@@ -1,7 +1,6 @@
 # gofra, an XMPP bot engine 
 
 ## Config
----------
 
 TBD  
 
@@ -9,7 +8,6 @@ Fields of the config file and convention for per-plugin configuration
 
 
 ## Building the project & running tests
----------------------------------------
 
 To build a docker image and run a container out of it you can do as follows:
 
@@ -31,7 +29,6 @@ go test -p=1 -coverprofile=coverage.out  && go tool cover -html=coverage.out
 ```
 
 ## Creating plugins
------------------------
 
 Gofra plugins must comply with the Plugin interface:
 ```
@@ -50,7 +47,6 @@ It is ran as a goroutine.
 An easy way to get a grasp is to copy the example plugin template and build from there.
 
 ## Events
----------
 
 Plugins subscribe to events and can trigger others, here's a list of them:
 
