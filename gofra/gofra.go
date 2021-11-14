@@ -42,7 +42,11 @@ func NewGofra(ctx context.Context, config Config, xmlIn, xmlOut io.Writer, logge
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	opts := []mux.Option{mux.Presence(stanza.AvailablePresence, xml.Name{}, stanzaHandler{})}
+	opts := []mux.Option{
+		mux.Presence(stanza.AvailablePresence, xml.Name{}, stanzaHandler{}),
+		mux.Message(stanza.ChatMessage, xml.Name{}, stanzaHandler{}),
+		mux.Message(stanza.GroupChatMessage, xml.Name{}, stanzaHandler{}),
+	}
 	mux := mux.New("jabber:client", opts...)
 	gofra = &Gofra{
 		config: config,
@@ -178,11 +182,25 @@ func (g *Gofra) Connect() error{
 
 } 
 
-/* func (stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
-	return errFailTest
-} */
+func (stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
+	gofra.logger.Printf("Message received: %v", msg)
+	e := Event{
+		Name: "messageReceived",
+		Payload: make(map[string]interface{}),
+	}
+	e.SetStanza(msg)
+	log.Println(gofra.Publish(e))
+	return nil
+}
+
 func (stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEncoder) error {
-	gofra.logger.Printf("Presence received: %v", p)
+	gofra.logger.Printf("Presence received: %v, Type: %s", p, p.)
+	e := Event{
+		Name: "presenceReceived",
+		Payload: make(map[string]interface{}),
+	}
+	e.SetStanza(p)
+	log.Println(gofra.Publish(e))
 	return nil
 }
 /* func (stanzaHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
