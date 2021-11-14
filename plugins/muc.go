@@ -11,7 +11,7 @@ import (
 	"gofra/gofra"
 	"strings"
 
-	"gosrc.io/xmpp/stanza"
+	"mellium.im/xmpp/stanza"
 )
 
 type plugin string
@@ -58,7 +58,7 @@ func prepareMUCs () {
 }
 
 func handlePresence(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
-	pres, ok := e.Stanza.(stanza.Presence)
+	pres := e.GetStanza()
 	if !ok {
 		log.Println("Ignoring packet: %T\n", e.Stanza)
 		return gofra.Reply{Empty: true}, e

@@ -1,7 +1,7 @@
 package gofra
 
 import (
-	"gosrc.io/xmpp/stanza"
+	"mellium.im/xmpp/stanza"
 )
 
 // Interface to be satisfied by any gofra plugin
@@ -20,11 +20,11 @@ type Runnable interface {
 // Interface providing plugins the needed tools to interact with the engine
 // and/or other plugins
 type API interface {
-	Send(to, message string, msgType stanza.StanzaType) error
+	SendMessage(to, message string, msgType stanza.MessageType) error
 	Subscribe(eventName, pluginName string, handler Handler, options Options)
 	Publish(event Event) Reply
 	SetPriority(eventName, pluginName string, options Options) error
-	SendStanza(stanza stanza.Packet) error
+	SendStanza(stanza interface{}) error
 }
 
 type Config struct {
@@ -60,7 +60,6 @@ type EventHandler struct {
 type Event struct {
 	Name string
 	Payload map[string]interface{}
-	Stanza stanza.Packet
 }
 
 type Options struct {
@@ -73,6 +72,24 @@ type Reply struct{
 	Ok bool
 	Empty bool
 } 
+
+func (e *Event) SetStanza(stanza interface{}) {
+	if e.Payload == nil {
+		e.Payload = make(map[string]interface{})
+	}
+	e.Payload["stanza"] = stanza
+}
+
+func (e *Event) GetStanza() interface{} {
+	if e.Payload == nil {
+		e.Payload = make(map[string]interface{})
+	}
+	stanza, exists := e.Payload["stanza"]
+	if !exists {
+		return nil
+	}
+	return stanza
+}
 
 // Data access interface for text-based commands to answer to a suitable message.
 func (r *Reply) SetAnswer(answer string) {
