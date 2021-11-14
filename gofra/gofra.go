@@ -194,7 +194,7 @@ func (stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEnco
 }
 
 func (stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEncoder) error {
-	gofra.logger.Printf("Presence received: %v, Type: %s", p, p.)
+	gofra.logger.Printf("Presence received: %v", p)
 	e := Event{
 		Name: "presenceReceived",
 		Payload: make(map[string]interface{}),
