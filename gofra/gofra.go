@@ -21,7 +21,7 @@ type Gofra struct {
 	config Config
 	events Events
 	plugins Plugins
-	client *xmpp.Session
+	Client *xmpp.Session
 	context context.Context
 	logger *log.Logger
 	debug *log.Logger
@@ -48,7 +48,7 @@ func NewGofra(ctx context.Context, config Config, xmlIn, xmlOut io.Writer, logge
 		config: config,
 		events: NewEvents(config),
 		plugins: NewPlugins(config),
-		client: c,
+		Client: c,
 		context: ctx,
 		logger: logger,
 		debug: debug,
@@ -71,12 +71,12 @@ func (g *Gofra) SendMessage(to, body string, msgType stanza.MessageType) error {
 		return err
 	}
 	msg := MessageBody{Message: stanza.Message{Type: msgType, To: j.Bare()}, Body: body}
-	err = g.client.Encode(g.context, msg)
+	err = g.Client.Encode(g.context, msg)
 	return err
 }
 
 func (g *Gofra) SendStanza(s interface{}) error {
-	err := g.client.Encode(g.context, s)
+	err := g.Client.Encode(g.context, s)
 	return err
 }
 
@@ -126,14 +126,14 @@ func (g *Gofra) Init() error{
 
 func (g *Gofra) Connect() error{
 	// Send initial presence to let the server know we want to receive messages.
-	err := gofra.client.Send(gofra.context, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
+	err := gofra.Client.Send(gofra.context, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
 	if err != nil {
 		return fmt.Errorf("error sending initial presence: %w", err)
 	}
 
 	g.Publish(Event{Name: "connected"})
 
-	return gofra.client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))/* func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+	return gofra.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))/* func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 
 		// This is a workaround for https://github.com/mellium/xmpp/issues/196
 		// until a cleaner permanent fix is devised (see https://github.com/mellium/xmpp/issues/197)
@@ -226,8 +226,9 @@ func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut io.Writer, 
 	if err != nil {
 		return nil, fmt.Errorf("error parsing address %q: %w", config.Jid, err)
 	}
-
-	conn, err := dial.Client(ctx, "tcp", j)
+	var d dial.Dialer
+	d.NoLookup = true
+	conn, err := d.Dial(ctx, "tcp", j)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing sesion: %w", err)
 	}
@@ -250,21 +251,5 @@ func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut io.Writer, 
 	if err != nil {
 		return nil, fmt.Errorf("error establishing a session: %w", err)
 	}
-	defer func() {
-		logger.Println("Closing conn…")
-		if err := s.Conn().Close(); err != nil {
-			logger.Printf("Error closing connection: %q", err)
-		}
-	}()
-
-	go func() {
-		select {
-		case <-ctx.Done():
-			logger.Println("Closing session…")
-			if err := s.Close(); err != nil {
-				logger.Printf("Error closing session: %q", err)
-			}
-		}
-	}()
 	return s, nil
 }

@@ -109,6 +109,22 @@ func main() {
 	}()
 
 	g = gofra.NewGofra(ctx, config, xmlIn, xmlOut, &logger, &debug)
+	defer func() {
+		logger.Println("Closing conn…")
+		if err := g.Client.Conn().Close(); err != nil {
+			logger.Printf("Error closing connection: %q", err)
+		}
+	}()
+
+	go func() {
+		select {
+		case <-ctx.Done():
+			logger.Println("Closing session…")
+			if err := g.Client.Close(); err != nil {
+				logger.Printf("Error closing session: %q", err)
+			}
+		}
+	}()
 	err = g.Init()
 	if err != nil {
 		log.Fatal(err.Error())
