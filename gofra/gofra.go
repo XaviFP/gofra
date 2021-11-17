@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 
 	"mellium.im/sasl"
 	"mellium.im/xmlstream"
@@ -23,8 +24,8 @@ type Gofra struct {
 	plugins Plugins
 	Client *xmpp.Session
 	context context.Context
-	logger *log.Logger
-	debug *log.Logger
+	Logger *log.Logger
+	Debug *log.Logger
 	mux *mux.ServeMux
 }
 
@@ -33,7 +34,7 @@ type stanzaHandler struct{}
 var gofra *Gofra
 var initialized bool
 
-func NewGofra(ctx context.Context, config Config, xmlIn, xmlOut io.Writer, logger, debug *log.Logger) *Gofra {
+func NewGofra(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer, logger, debug *log.Logger) *Gofra {
 	// Singleton
 	if gofra != nil {
 		return gofra
@@ -54,8 +55,8 @@ func NewGofra(ctx context.Context, config Config, xmlIn, xmlOut io.Writer, logge
 		plugins: NewPlugins(config),
 		Client: c,
 		context: ctx,
-		logger: logger,
-		debug: debug,
+		Logger: logger,
+		Debug: debug,
 		mux: mux,
 	}
 	return gofra
@@ -69,14 +70,42 @@ type MessageBody struct {
 
 // Send function wrapper to make sending messages easier
 func (g *Gofra) SendMessage(to, body string, msgType stanza.MessageType) error {
-//	reply := stanza.Message{Attrs: stanza.Attrs{To: to, Type: msgType}, Body: message}
 	j, err := jid.Parse(to)
 	if err != nil {
 		return err
 	}
 	msg := MessageBody{Message: stanza.Message{Type: msgType, To: j.Bare()}, Body: body}
 	err = g.Client.Encode(g.context, msg)
+	if err != nil {
+		return err
+	}
+
+	start := msg.StartElement()
+
+	d := xml.NewTokenDecoder(xmlstream.Token(start))
+	if _, err := d.Token(); err != nil {
+		return err
+	}
+	log.Println("GOFRA JUST BEFORE CALLING SEND IN SENDMESSAGE")
+	err = g.Client.Send(g.context, d)
+	log.Println("GOFRA JUST AFTER CALLING SEND IN SENDMESSAGE")
 	return err
+}
+
+func (g *Gofra) EncodeMessage(to, body string, msgType stanza.MessageType, t xmlstream.TokenReadEncoder) error {
+	j, err := jid.Parse(to)
+	if err != nil {
+		return err
+	}
+	msg := MessageBody{Message: stanza.Message{Type: msgType, To: j.Bare()}, Body: body}
+	err = t.Encode(msg)
+	if err != nil {
+		return err
+	}
+	g.Logger.Println("BEFORE GOFRA's ENCODE")
+/* 	err = g.Client.Encode(g.context, msg)
+	g.Logger.Println("AFTER GOFRA's ENCODE", err) */
+	return nil
 }
 
 func (g *Gofra) SendStanza(s interface{}) error {
@@ -104,6 +133,7 @@ func (g *Gofra) Publish(event Event) Reply{
             log.Println("handler failed:", err)
         }
     }()
+	g.Logger.Println("GOFRA GOT TIL HERE")
 	return g.events.Publish(event)
 }
 
@@ -136,54 +166,70 @@ func (g *Gofra) Connect() error{
 	}
 
 	g.Publish(Event{Name: "connected"})
-
-	return gofra.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))/* func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-
+	//g.SendMessage("vaulor@blastersklan.com", "Harooooo", stanza.ChatMessage)
+	//return gofra.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))
+	return gofra.Client.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 		// This is a workaround for https://github.com/mellium/xmpp/issues/196
 		// until a cleaner permanent fix is devised (see https://github.com/mellium/xmpp/issues/197)
-		d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), t))
-		if _, err := d.Token(); err != nil {
-			return err
-		}
-
+		g.Debug.Println(g.Client.ConnectionState())
+		st := start.Copy()
 		// Ignore anything that's not a message. In a real system we'd want to at
 		// least respond to IQs.
-		if start.Name.Local != "message" {
+		if start.Name.Local == "message" {
+			d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(st), t))
+			if _, err := d.Token(); err != nil {
+				return err
+			}
+
+			msg := MessageBody{}
+			err = d.DecodeElement(&msg, &st)
+			if err != nil && err != io.EOF {
+				g.Logger.Printf("Error decoding message: %q", err)
+				return nil
+			}
+
+			if msg.Body == "" || msg.Type != stanza.ChatMessage {
+				return nil
+			}
+			g.Debug.Println("THIS STANZA WAS A MESSAGE")
+			e := Event{
+				Name: "messageReceived",
+				Payload: make(map[string]interface{}),
+			}
+			e.SetStanza(&msg)
+			e.SetTokenReadEncoder(t)
+
+			log.Println(gofra.Publish(e))
 			return nil
 		}
-
-		msg := MessageBody{}
-		err = d.DecodeElement(&msg, start)
-		if err != nil && err != io.EOF {
-			g.logger.Printf("Error decoding message: %q", err)
-			return nil
-		}
-
-		// Don't reflect messages unless they are chat messages and actually have a
-		// body.
-		// In a real world situation we'd probably want to respond to IQs, at least.
-		if msg.Body == "" || msg.Type != stanza.ChatMessage {
-			return nil
-		}
-
-		reply := MessageBody{
-			Message: stanza.Message{
-				To: msg.From.Bare(),
-			},
-			Body: msg.Body,
-		}
-		g.debug.Printf("Replying to message %q from %s with body %q", msg.ID, reply.To, reply.Body)
-		err = t.Encode(reply)
-		if err != nil {
-			g.logger.Printf("Error responding to message %q: %q", msg.ID, err)
+		if start.Name.Local == "presence" {
+			g.Debug.Println("THIS STANZA WAS A PRESENCE")
 		}
 		return nil
-	}))*/
+	}))
 
 } 
 
 func (stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
-	gofra.logger.Printf("Message received: %v", msg)
+	start := msg.StartElement()
+
+	d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(&start), t))
+	if _, err := d.Token(); err != nil {
+		return err
+	}
+
+	msgStruct := MessageBody{}
+	err := d.DecodeElement(&msgStruct, &start)
+	if err != nil && err != io.EOF {
+		gofra.Logger.Printf("Error decoding message: %q", err)
+		return nil
+	}
+
+	if msgStruct.Body == "" || msgStruct.Type != stanza.ChatMessage {
+		gofra.Logger.Printf("Message received has no body")
+	}
+
+	gofra.Logger.Printf("Message received: %v, with body: %q", msgStruct, msgStruct.Body)
 	e := Event{
 		Name: "messageReceived",
 		Payload: make(map[string]interface{}),
@@ -194,7 +240,7 @@ func (stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEnco
 }
 
 func (stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEncoder) error {
-	gofra.logger.Printf("Presence received: %v", p)
+	gofra.Logger.Printf("Presence received: %v", p)
 	e := Event{
 		Name: "presenceReceived",
 		Payload: make(map[string]interface{}),
@@ -203,6 +249,7 @@ func (stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEnco
 	log.Println(gofra.Publish(e))
 	return nil
 }
+
 /* func (stanzaHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 	return errFailTest
 } */
@@ -239,7 +286,16 @@ func handleMessage(s xmpp.Sender, p stanza.Packet) {
 	log.Printf("Body = %s - from = %s\n", msg.Body, msg.From)
 } */
 
-func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut io.Writer, logger, debug *log.Logger) (*xmpp.Session, error){
+type logWriter struct {
+	logger *log.Logger
+}
+
+func (lw logWriter) Write(p []byte) (int, error) {
+	lw.logger.Printf("%s", p)
+	return len(p), nil
+}
+
+func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer, logger, debug *log.Logger) (*xmpp.Session, error){
 	j, err := jid.Parse(config.Jid)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing address %q: %w", config.Jid, err)
@@ -262,8 +318,8 @@ func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut io.Writer, 
 				}),
 				xmpp.SASL("", config.Password, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
 			},
-			TeeIn:  xmlIn,
-			TeeOut: xmlOut,
+			TeeIn:  logWriter{log.New(os.Stdout, "IN ", log.LstdFlags)},
+			TeeOut: logWriter{log.New(os.Stdout, "OUT ", log.LstdFlags)},
 		}
 	}))
 	if err != nil {

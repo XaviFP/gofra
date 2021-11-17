@@ -7,7 +7,7 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
+	/* "fmt" */
 	"io"
 	"io/ioutil"
 	"log"
@@ -49,13 +49,13 @@ func (lw logWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func getStreamLoggers(config gofra.Config) (io.Writer, io.Writer, log.Logger, log.Logger, error){
+func getStreamLoggers(config gofra.Config) (*io.Writer, *io.Writer, log.Logger, log.Logger, error){
 	// Setup logging and verbose logging that's disabled by default.
 	logger := log.New(os.Stderr, "", log.LstdFlags)
 	debug := log.New(io.Discard, "DEBUG ", log.LstdFlags)
 
 	// Configure behavior based on config file.
-	var (
+	/* var (
 		verbose bool
 		logXML  bool
 	)
@@ -74,24 +74,24 @@ func getStreamLoggers(config gofra.Config) (io.Writer, io.Writer, log.Logger, lo
 	case nil:
 	default:
 		logger.Fatal(err)
-	}
+	} */
 
 	// Enable verbose logging if the flag was set.
-	if verbose || logXML {
+	if config.Verbose || config.LogXML {
 		debug.SetOutput(os.Stderr)
 	}
 
 	// Enable XML logging if the flag was set.
 	var xmlIn, xmlOut io.Writer
-	if logXML {
+	if config.LogXML {
 		xmlIn = logWriter{log.New(os.Stdout, "IN ", log.LstdFlags)}
 		xmlOut = logWriter{log.New(os.Stdout, "OUT ", log.LstdFlags)}
 	}
-	return xmlIn, xmlOut, *logger, *debug, nil
+	return &xmlIn, &xmlOut, *logger, *debug, nil
 }
 
 func main() {
-	xmlIn, xmlOut, logger, debug, err := getStreamLoggers(config)
+	xmlIn, xmlOut, logger, debug, _ := getStreamLoggers(config)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -125,7 +125,7 @@ func main() {
 			}
 		}
 	}()
-	err = g.Init()
+	err := g.Init()
 	if err != nil {
 		log.Fatal(err.Error())
 	}

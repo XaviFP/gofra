@@ -34,6 +34,8 @@ type Config struct {
 	PluginPaths []string `yaml:"pluginPaths"`
 	Jid string `yaml:"jid"`
 	Nick string `yaml:"nick"`
+	LogXML bool `yaml:"logXML"`
+	Verbose bool `yaml:"verbose"`
 	Mucs []MucConfig `yaml:"mucs"`
 	Plugins map[string]map[string]interface{} `yaml:"plugins"`
 	Extra map[string]interface{} `yaml:"extra"`
@@ -85,6 +87,24 @@ func (e *Event) GetStanza() interface{} {
 		e.Payload = make(map[string]interface{})
 	}
 	stanza, exists := e.Payload["stanza"]
+	if !exists {
+		return nil
+	}
+	return stanza
+}
+
+func (e *Event) SetTokenReadEncoder(stanza interface{}) {
+	if e.Payload == nil {
+		e.Payload = make(map[string]interface{})
+	}
+	e.Payload["tokenReadEncoder"] = stanza
+}
+
+func (e *Event) GetTokenReadEncoder() interface{} {
+	if e.Payload == nil {
+		e.Payload = make(map[string]interface{})
+	}
+	stanza, exists := e.Payload["tokenReadEncoder"]
 	if !exists {
 		return nil
 	}
