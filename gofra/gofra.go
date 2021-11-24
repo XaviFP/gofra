@@ -23,7 +23,7 @@ type Gofra struct {
 	events Events
 	plugins Plugins
 	Client *xmpp.Session
-	context context.Context
+	Context context.Context
 	Logger *log.Logger
 	Debug *log.Logger
 	mux *mux.ServeMux
@@ -54,7 +54,7 @@ func NewGofra(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer, logg
 		events: NewEvents(config),
 		plugins: NewPlugins(config),
 		Client: c,
-		context: ctx,
+		Context: ctx,
 		Logger: logger,
 		Debug: debug,
 		mux: mux,
@@ -75,7 +75,7 @@ func (g *Gofra) SendMessage(to, body string, msgType stanza.MessageType) error {
 		return err
 	}
 	msg := MessageBody{Message: stanza.Message{Type: msgType, To: j.Bare()}, Body: body}
-	err = g.Client.Encode(g.context, msg)
+	err = g.Client.Encode(g.Context, msg)
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (g *Gofra) SendMessage(to, body string, msgType stanza.MessageType) error {
 		return err
 	}
 	log.Println("GOFRA JUST BEFORE CALLING SEND IN SENDMESSAGE")
-	err = g.Client.Send(g.context, d)
+	err = g.Client.Send(g.Context, d)
 	log.Println("GOFRA JUST AFTER CALLING SEND IN SENDMESSAGE")
 	return err
 }
@@ -109,7 +109,7 @@ func (g *Gofra) EncodeMessage(to, body string, msgType stanza.MessageType, t xml
 }
 
 func (g *Gofra) SendStanza(s interface{}) error {
-	err := g.Client.Encode(g.context, s)
+	err := g.Client.Encode(g.Context, s)
 	return err
 }
 
@@ -133,7 +133,7 @@ func (g *Gofra) Publish(event Event) Reply{
             log.Println("handler failed:", err)
         }
     }()
-	g.Logger.Println("GOFRA GOT TIL HERE")
+
 	return g.events.Publish(event)
 }
 
@@ -160,7 +160,7 @@ func (g *Gofra) Init() error{
 
 func (g *Gofra) Connect() error{
 	// Send initial presence to let the server know we want to receive messages.
-	err := gofra.Client.Send(gofra.context, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
+	err := gofra.Client.Send(gofra.Context, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
 	if err != nil {
 		return fmt.Errorf("error sending initial presence: %w", err)
 	}
@@ -169,20 +169,15 @@ func (g *Gofra) Connect() error{
 	//g.SendMessage("vaulor@blastersklan.com", "Harooooo", stanza.ChatMessage)
 	//return gofra.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))
 	return gofra.Client.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-		// This is a workaround for https://github.com/mellium/xmpp/issues/196
-		// until a cleaner permanent fix is devised (see https://github.com/mellium/xmpp/issues/197)
-		g.Debug.Println(g.Client.ConnectionState())
-		st := start.Copy()
-		// Ignore anything that's not a message. In a real system we'd want to at
-		// least respond to IQs.
+
 		if start.Name.Local == "message" {
-			d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(st), t))
+			d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), t))
 			if _, err := d.Token(); err != nil {
 				return err
 			}
 
 			msg := MessageBody{}
-			err = d.DecodeElement(&msg, &st)
+			err = d.DecodeElement(&msg, start)
 			if err != nil && err != io.EOF {
 				g.Logger.Printf("Error decoding message: %q", err)
 				return nil
@@ -197,9 +192,10 @@ func (g *Gofra) Connect() error{
 				Payload: make(map[string]interface{}),
 			}
 			e.SetStanza(&msg)
-			e.SetTokenReadEncoder(t)
 
-			log.Println(gofra.Publish(e))
+			defer func() {
+				go gofra.Publish(e)
+			}()
 			return nil
 		}
 		if start.Name.Local == "presence" {
