@@ -79,8 +79,8 @@ func handleMessage(e gofra.Event, acc *gofra.Event) (gofra.Reply, gofra.Event) {
 	e.Payload["commandBody"] = msg.Body
 	event := gofra.Event{eventName, e.Payload}
 	reply := g.Publish(event)
-	
-	if !reply.Empty && reply.Ok && reply.Payload != nil{
+
+	if !reply.Empty && reply.GetAnswer() != "" {
 		r := gofra.MessageBody{Message: stanza.Message{Type: msgType, To: to.Bare()}, Body: reply.GetAnswer()}
 		trc, err := g.Client.EncodeMessage(g.Context, r)
 		trc.Close()
