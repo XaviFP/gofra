@@ -11,7 +11,6 @@ import (
 	"os"
 	"strings"
 
-	"mellium.im/xmlstream"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -64,15 +63,6 @@ func handleMessage(e gofra.Event, acc *gofra.Event) (gofra.Reply, gofra.Event) {
 		g.Logger.Println("Error msg is nil in command plugin")
 		return gofra.Reply{nil, false, true}, e
 	}
-	t, ok := e.GetTokenReadEncoder().(xmlstream.TokenReadEncoder)
-	if !ok {
-		_, _ = fmt.Fprintf(os.Stdout, "COULDN'T CAST TokenReadEncoder: %T\n", t)
-		return gofra.Reply{nil, false, true}, e
-	}
-	if t == nil {
-		g.Logger.Println("Error t is nil in command plugin")
-		return gofra.Reply{nil, false, true}, e
-	}
 
 	if msg.Body == "" {
 		return gofra.Reply{nil, false, true}, e
@@ -92,7 +82,11 @@ func handleMessage(e gofra.Event, acc *gofra.Event) (gofra.Reply, gofra.Event) {
 	
 	if !reply.Empty && reply.Ok && reply.Payload != nil{
 		r := gofra.MessageBody{Message: stanza.Message{Type: msgType, To: to.Bare()}, Body: reply.GetAnswer()}
-		_ = t.Encode(r)
+		trc, err := g.Client.EncodeMessage(g.Context, r)
+		trc.Close()
+		if err != nil {
+			g.Logger.Println("Error encoding message in command Plugin: ", err)
+		}
 	}
 
 	return reply, e
