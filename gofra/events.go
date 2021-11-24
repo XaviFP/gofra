@@ -36,27 +36,30 @@ func (e Events) Subscribe(eventName, pluginName string, handler Handler, op Opti
 func (e Events) Publish(event Event) Reply{
 	handlers, exist := e[event.Name]
 	var reply Reply
-	if !exist {
-		//No handlers for event
-		r := Reply{Payload: make(map[string]interface{}), Ok: false, Empty: false}
-		r.SetNoHandlers(true)
-		return r
+
+	if !exist || len(handlers) == 0 {
+		fmt.Println("No handlers for event: " + event.Name)
+		reply = Reply{Payload: make(map[string]interface{}), Ok: false, Empty: false}
+		reply.SetNoHandlers(true)
+		return reply
 	}
+
 	answered := false
 	chainedHandlers := []EventHandler{}
+
 	for _, handler := range handlers {
 		if handler.Chain {
 			chainedHandlers = append(chainedHandlers, handler)
 		} else {
 			r, _ := handler.Handler(event, nil)
-			if !answered && !r.Empty && r.Ok {
+			if !answered && !r.Empty {
 				reply = r
 				answered = true
 			}
 		}
 	}
 
-	if len(chainedHandlers) < 1 {
+	if len(chainedHandlers) == 0 {
 		return reply
 	}
 

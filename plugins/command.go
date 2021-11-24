@@ -11,13 +11,14 @@ import (
 	"os"
 	"strings"
 
-	"gosrc.io/xmpp/stanza"
+	"mellium.im/xmpp/stanza"
 )
 
 type plugin string
+
 const defaultCommandChar = "!"
 const name = "Commands"
-var g gofra.API
+var g *gofra.Gofra
 var c gofra.Config
 
 func (p plugin) Name() string {
@@ -30,7 +31,7 @@ func (p plugin) Description() string {
 
 func (p plugin) Init(config gofra.Config, api gofra.API) {
 	c = config
-	g = api
+	g, _ = api.(*gofra.Gofra)
 	g.Subscribe(
 		"messageReceived",
 		p.Name(),
@@ -53,32 +54,39 @@ func checkConfig(config gofra.Config) {
 }
 
 func handleMessage(e gofra.Event, acc *gofra.Event) (gofra.Reply, gofra.Event) {
-	msg, ok := e.Stanza.(stanza.Message)
+	msg, ok := e.GetStanza().(*gofra.MessageBody)
 	if !ok {
-		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", e.Stanza)
+		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", e.GetStanza())
 		return gofra.Reply{nil, false, true}, e
 	}
+	if msg == nil {
+		g.Logger.Println("Error msg is nil in command plugin")
+		return gofra.Reply{nil, false, true}, e
+	}
+
 	if msg.Body == "" {
 		return gofra.Reply{nil, false, true}, e
 	}
 	command := ""
-	if strings.HasPrefix(msg.Body, c.Plugins[name]["commandChar"].(string)) {
-		command = strings.Split(msg.Body, " ")[0][1:]
+	if !strings.HasPrefix(msg.Body, c.Plugins[name]["commandChar"].(string)) {
+		return gofra.Reply{nil, false, true}, e
 	}
-	msgType := stanza.MessageTypeChat
+	command = strings.Split(msg.Body, " ")[0][1:]
+	msgType := msg.Type
 	to := msg.From
-	if !msg.Attrs.Type.IsEmpty() && msg.Attrs.Type == stanza.MessageTypeGroupchat {
-		msgType = stanza.MessageTypeGroupchat
-		to = strings.Split(msg.From, "/")[0]
-	}
+
 	eventName := "command/" + command
 	e.Payload["commandBody"] = msg.Body
-	event := gofra.Event{eventName, e.Payload, e.Stanza}
+	event := gofra.Event{eventName, e.Payload}
 	reply := g.Publish(event)
-	
-	if !reply.Empty && reply.Ok && reply.Payload != nil{
-		r := stanza.Message{Attrs: stanza.Attrs{To: to, Type: msgType}, Body: reply.GetAnswer()}
-		_ = g.SendStanza(r)
+
+	if !reply.Empty && reply.GetAnswer() != "" {
+		r := gofra.MessageBody{Message: stanza.Message{Type: msgType, To: to.Bare()}, Body: reply.GetAnswer()}
+		trc, err := g.Client.EncodeMessage(g.Context, r)
+		trc.Close()
+		if err != nil {
+			g.Logger.Println("Error encoding message in command Plugin: ", err)
+		}
 	}
 
 	return reply, e

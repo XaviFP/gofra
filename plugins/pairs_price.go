@@ -1,5 +1,5 @@
 /*
-pairs_price is a plugin for botname that provides an api to check cryptocurrency pair prices
+pairs_price is a gofra plugin that provides an api to check cryptocurrency pair prices
 */
 
 package main
@@ -60,8 +60,8 @@ func handlePrice(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	if argLine != "" {
 		if len(args) > 2 {
 			r = gofra.Reply{Ok: true, Empty: false}
-		r.SetAnswer("Too many arguments")
-		return r, e
+			r.SetAnswer("Too many arguments")
+			return r, e
 		} else if len(args) == 2 {
 			pair = args[0]
 			exchange = args[1]
@@ -71,6 +71,7 @@ func handlePrice(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	}
 	requestUrl := metadataPrefix + exchange + "/" + pair + metadataSufix
 	log.Println(requestUrl)
+
 	resp, err := http.Get(requestUrl)
 
 	if err != nil {
@@ -99,14 +100,15 @@ func handlePrice(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 		r.SetAnswer("Price for pair not found")
 		return r, e
 	}
+
 	priceFloat := priceField.(float64)
 	price := strconv.FormatFloat(priceFloat, 'f', -1, 64)
 
 	log.Println(price)
 
 	r = gofra.Reply{Ok: true, Empty: false}
-		r.SetAnswer(price)
-		return r, e
+	r.SetAnswer(price)
+	return r, e
 }
 
 var Plugin plugin
