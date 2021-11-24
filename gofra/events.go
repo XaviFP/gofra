@@ -52,7 +52,7 @@ func (e Events) Publish(event Event) Reply{
 			chainedHandlers = append(chainedHandlers, handler)
 		} else {
 			r, _ := handler.Handler(event, nil)
-			if !answered && !r.Empty && r.Ok {
+			if !answered && !r.Empty {
 				reply = r
 				answered = true
 			}
