@@ -5,9 +5,9 @@ pairs_price is a gofra plugin that provides an api to check cryptocurrency pair 
 package main
 
 import (
-	//"encoding/json"
+	"encoding/json"
 	"log"
-	//"net/http"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -60,8 +60,8 @@ func handlePrice(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	if argLine != "" {
 		if len(args) > 2 {
 			r = gofra.Reply{Ok: true, Empty: false}
-		r.SetAnswer("Too many arguments")
-		return r, e
+			r.SetAnswer("Too many arguments")
+			return r, e
 		} else if len(args) == 2 {
 			pair = args[0]
 			exchange = args[1]
@@ -71,7 +71,8 @@ func handlePrice(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	}
 	requestUrl := metadataPrefix + exchange + "/" + pair + metadataSufix
 	log.Println(requestUrl)
-	/* resp, err := http.Get(requestUrl)
+
+	resp, err := http.Get(requestUrl)
 
 	if err != nil {
 		log.Println(err)
@@ -99,8 +100,8 @@ func handlePrice(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 		r.SetAnswer("Price for pair not found")
 		return r, e
 	}
-	priceFloat := priceField.(float64) */
-	priceFloat := 42.42
+
+	priceFloat := priceField.(float64)
 	price := strconv.FormatFloat(priceFloat, 'f', -1, 64)
 
 	log.Println(price)
