@@ -22,8 +22,8 @@ func (p plugin) Description() string {
 func (p plugin) Init() {
 }
 
-func notReally(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
-	return gofra.Reply{}, e
+func notReally(e gofra.Event) gofra.Reply {
+	return gofra.Reply{}
 }
 
 var Plugin plugin
