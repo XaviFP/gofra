@@ -76,7 +76,7 @@ func (p plugin) Run() {
 	}
 }
 
-func handleReminder(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
+func handleReminder(e gofra.Event) gofra.Reply {
 	var r gofra.Reply
 	argLine := e.Payload["commandBody"].(string)
 	args := strings.Split(argLine, " ")
@@ -87,7 +87,7 @@ func handleReminder(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string) + commandStr {
 		r = gofra.Reply{Ok: false, Empty: false}
 		r.SetAnswer("Wrong command")
-		return r, e 
+		return r
 	}
 
 	//Remove command and leave just the args for it
@@ -96,21 +96,21 @@ func handleReminder(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	if len(args) < 1 || (len(args) > 0 && args[0] == "") {
 		r = gofra.Reply{Ok: false, Empty: false}
 		r.SetAnswer("Need a message to remind")
-		return r, e
+		return r
 	}
 
 	msg, ok := e.GetStanza().(*gofra.MessageBody)
 	if !ok {
 		g.Logger.Printf("Ignoring packet: %T\n", e.GetStanza())
-		return gofra.Reply{nil, false, true}, e
+		return gofra.Reply{nil, false, true}
 	}
 	if msg == nil {
 		g.Logger.Println("Error msg is nil in command plugin")
-		return gofra.Reply{nil, false, true}, e
+		return gofra.Reply{nil, false, true}
 	}
 
 	if msg.Body == "" {
-		return gofra.Reply{nil, false, true}, e
+		return gofra.Reply{nil, false, true}
 	}
 	now := time.Now()
 	segs := now.Unix()
@@ -118,7 +118,7 @@ func handleReminder(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	reminders = append(reminders, rmdr)
 	r = gofra.Reply{Ok: true, Empty: false}
 	r.SetAnswer("Reminder added")
-	return r, e
+	return r
 }
 
 func addReminder(reminders []reminder, rmdr reminder) []reminder {
