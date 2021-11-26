@@ -122,18 +122,17 @@ are executed after all non-accumulative ones by descending priority order. Accum
 event values are received through the event pointer argument where changes are expecteted
 to be performed in order for the following chained handlers to recieve them. */
 func (g *Gofra) Subscribe(eventName, pluginName string, handler Handler, options Options) {
-	log.Println("Plugin "+pluginName+" subscribed to event "+eventName)
-	g.events.Subscribe(eventName, pluginName, handler, options)
+	g.Logger.Println("Plugin " + pluginName + " subscribed handler to event " + eventName)
+	g.events.Subscribe(eventName, pluginName, handler, nil, options)
+}
+
+func (g *Gofra) SubscribeChain(eventName, pluginName string, handler ChainHandler, options Options) {
+	g.Logger.Println("Plugin " + pluginName + " subscribed chained handler to event " + eventName)
+	g.events.Subscribe(eventName, pluginName, nil, handler, options)
 }
 
 // Executes all event handlers subscribed to a particular event
 func (g *Gofra) Publish(event Event) Reply{
-	defer func() {
-        if err := recover(); err != nil {
-            log.Println("handler failed:", err)
-        }
-    }()
-
 	return g.events.Publish(event)
 }
 
@@ -160,7 +159,7 @@ func (g *Gofra) Init() error{
 
 func (g *Gofra) Connect() error{
 	// Send initial presence to let the server know we want to receive messages.
-	err := gofra.Client.Send(gofra.Context, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
+	err := g.Client.Send(gofra.Context, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
 	if err != nil {
 		return fmt.Errorf("error sending initial presence: %w", err)
 	}
@@ -168,7 +167,7 @@ func (g *Gofra) Connect() error{
 	g.Publish(Event{Name: "connected"})
 	//g.SendMessage("vaulor@blastersklan.com", "Harooooo", stanza.ChatMessage)
 	//return gofra.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))
-	return gofra.Client.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+	return g.Client.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 
 		if start.Name.Local == "message" {
 			d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), t))
@@ -194,7 +193,7 @@ func (g *Gofra) Connect() error{
 			e.SetStanza(&msg)
 
 			defer func() {
-				go gofra.Publish(e)
+				go g.Publish(e)
 			}()
 			return nil
 		}
@@ -204,7 +203,7 @@ func (g *Gofra) Connect() error{
 		return nil
 	}))
 
-} 
+}
 
 func (stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
 	start := msg.StartElement()

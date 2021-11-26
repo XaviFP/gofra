@@ -2,12 +2,13 @@ package gofra
 
 import (
 	"fmt"
+	"log"
 	"sort"
 )
 
 type Events map[string][]EventHandler
 
-func (e Events) Subscribe(eventName, pluginName string, handler Handler, op Options){
+func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain ChainHandler, op Options){
 	if e[eventName] == nil {
 		e[eventName] = []EventHandler{}
 	}
@@ -17,7 +18,7 @@ func (e Events) Subscribe(eventName, pluginName string, handler Handler, op Opti
 			Handler: handler,
 			Priority: op.Priority,
 			PluginName: pluginName,
-			Chain: op.Chain,
+			Chain: chain,
 		},
 	)
 	e.sortByPriority(eventName)
@@ -26,7 +27,7 @@ func (e Events) Subscribe(eventName, pluginName string, handler Handler, op Opti
 		Payload: map[string]interface{}{
 			"event": eventName,
 			"plugin": pluginName,
-			"chained": op.Chain,
+			"chained": chain != nil,
 			"priority": op.Priority,
 		},
 	}
@@ -48,13 +49,14 @@ func (e Events) Publish(event Event) Reply{
 	chainedHandlers := []EventHandler{}
 
 	for _, handler := range handlers {
-		if handler.Chain {
+		if handler.Chain != nil {
 			chainedHandlers = append(chainedHandlers, handler)
 		} else {
-			r, _ := handler.Handler(event, nil)
+			r := runHandlerSafely(handler,event)
 			if !answered && !r.Empty {
 				reply = r
 				answered = true
+				log.Printf("event %s was answered with reply %v", event.Name, reply)
 			}
 		}
 	}
@@ -64,9 +66,29 @@ func (e Events) Publish(event Event) Reply{
 	}
 
 	for _, handler := range chainedHandlers {
-		_, _ = handler.Handler(event, &event)
+		runChainHandlerSafely(handler, &event)
 	}
 	return reply
+}
+
+func runHandlerSafely(h EventHandler, e Event) Reply {
+	defer func() {
+        if err := recover(); err != nil {
+            log.Printf("plugin '%s' handler for event '%s' failed: %s", h.PluginName, e.Name, err)
+        }
+    }()
+
+	return h.Handler(e)
+}
+
+func runChainHandlerSafely(h EventHandler, e *Event) {
+	defer func() {
+        if err := recover(); err != nil {
+            log.Printf("plugin '%s' chain handler for event '%s' failed: %s", h.PluginName, e.Name, err)
+        }
+    }()
+
+	h.Chain(e)
 }
 
 func NewEvents(config Config) Events {
