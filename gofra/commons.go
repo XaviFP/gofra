@@ -22,6 +22,7 @@ type Runnable interface {
 type API interface {
 	SendMessage(to, message string, msgType stanza.MessageType) error
 	Subscribe(eventName, pluginName string, handler Handler, options Options)
+	SubscribeChain(eventName, pluginName string, handler ChainHandler, options Options)
 	Publish(event Event) Reply
 	SetPriority(eventName, pluginName string, options Options) error
 	SendStanza(stanza interface{}) error
@@ -50,13 +51,14 @@ type MucConfig struct {
 
 //////////////////// EVENTS /////////////////////
 
-type Handler func(event Event, accumulated *Event) (Reply, Event)
+type Handler func(event Event) Reply
+type ChainHandler func(accumulated *Event)
 
 type EventHandler struct {
 	Handler Handler
 	Priority int64
 	PluginName string
-	Chain bool
+	Chain ChainHandler
 }
 
 type Event struct {
@@ -87,24 +89,6 @@ func (e *Event) GetStanza() interface{} {
 		e.Payload = make(map[string]interface{})
 	}
 	stanza, exists := e.Payload["stanza"]
-	if !exists {
-		return nil
-	}
-	return stanza
-}
-
-func (e *Event) SetTokenReadEncoder(stanza interface{}) {
-	if e.Payload == nil {
-		e.Payload = make(map[string]interface{})
-	}
-	e.Payload["tokenReadEncoder"] = stanza
-}
-
-func (e *Event) GetTokenReadEncoder() interface{} {
-	if e.Payload == nil {
-		e.Payload = make(map[string]interface{})
-	}
-	stanza, exists := e.Payload["tokenReadEncoder"]
 	if !exists {
 		return nil
 	}
