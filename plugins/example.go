@@ -29,12 +29,12 @@ func (p plugin) Init(conf gofra.Config, api gofra.API) {
 	g.Subscribe(
 		"exampleEvent",
 		p.Name(),
-		joinMUCs,
+		handleExampleEvent,
 		gofra.Options{},
 	)
 }
 
-func handleExampleEvent(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
+func handleExampleEvent(e gofra.Event) gofra.Reply {
 	// do things with e
 	data := e.Payload
 	log.Println(data)
@@ -48,7 +48,7 @@ func handleExampleEvent(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event
 	if reply.Empty {
 		r := gofra.Reply{Empty: true}
 		r.Ok = reply.Ok
-		return r, e
+		return r
 	}
 	
 	// get reply's content and work with it
@@ -56,7 +56,7 @@ func handleExampleEvent(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event
 	log.Println(data)
 
 	// return a reply
-	return gofra.Reply{Ok: true, Empty: false, Payload: data}, e
+	return gofra.Reply{Ok: true, Empty: false, Payload: data}
 }
 
 var Plugin plugin
