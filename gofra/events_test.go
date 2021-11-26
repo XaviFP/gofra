@@ -21,10 +21,11 @@ func TestPublishSubscribeEvent(t *testing.T) {
 	events.Subscribe(
 		"addedEventListener",
 		"testPlugin",
-		func(e Event, _ *Event) (Reply, Event){
+		func(e Event) Reply {
 			setRan(true)
-			return Reply{}, e
+			return Reply{}
 		},
+		nil,
 		Options{},
 	)
 	if !ran {
@@ -32,8 +33,8 @@ func TestPublishSubscribeEvent(t *testing.T) {
 	}
 }
 
-func exampleHandler(e Event, _ *Event) (Reply, Event){
-	return Reply{}, e
+func exampleHandler(e Event) Reply {
+	return Reply{}
 }
 func TestSetpriority(t *testing.T) {
 	events := NewEvents(Config{})
@@ -42,12 +43,14 @@ func TestSetpriority(t *testing.T) {
 		"addedEventListener",
 		"testPlugin1",
 		exampleHandler,
+		nil,
 		Options{Priority: 1},
 	)
 	events.Subscribe(
 		"addedEventListener",
 		"testPlugin2",
 		exampleHandler,
+		nil,
 		Options{Priority: 2},
 	)
 	if events["addedEventListener"][0].PluginName != "testPlugin2"{
