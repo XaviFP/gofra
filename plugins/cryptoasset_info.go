@@ -41,7 +41,7 @@ func (p plugin) Init(conf gofra.Config, api gofra.API) {
 	)
 }
 
-func handleAssetInfo(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
+func handleAssetInfo(e gofra.Event) gofra.Reply {
 	var r gofra.Reply
 	asset := defaultAsset
 	argLine := e.Payload["commandBody"].(string)
@@ -49,7 +49,7 @@ func handleAssetInfo(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string) + commandStr {
 		r = gofra.Reply{Ok: false, Empty: false}
 		r.SetAnswer("Wrong command")
-		return r, e 
+		return r
 	}
 	//Remove command and leave just the args for it
 	args = args[1:]
@@ -70,14 +70,14 @@ func handleAssetInfo(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	if resp.StatusCode != http.StatusOK {
 		r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer("Something went wrong")
-		return r, e
+		return r
 	}
 	var result map[string]interface{}
 	log.Println(resp.Body)
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer("Invalid response")
-		return r, e
+		return r
 	}
 	
 	aux := result["result"]
@@ -86,26 +86,26 @@ func handleAssetInfo(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
 	if !ok {
 		r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer("Asset not found")
-		return r, e
+		return r
 	}
 	payloadMap := payload.(map[string]interface{})
 	description, ok := payloadMap["AssetDescription"]
 	if !ok  {
 		r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer("No description for " + asset + " yet")
-		return r, e
+		return r
 	}
 	descriptionString := description.(string)
 	if descriptionString == "" {
 		r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer("No description for " + asset + " yet")
-		return r, e
+		return r
 	}
 	log.Println(result)
 	
 	r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer(descriptionString)
-		return r, e
+		return r
 }
 
 var Plugin plugin
