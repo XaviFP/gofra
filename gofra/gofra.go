@@ -75,42 +75,11 @@ func (g *Gofra) SendMessage(to, body string, msgType stanza.MessageType) error {
 		return err
 	}
 	msg := MessageBody{Message: stanza.Message{Type: msgType, To: j.Bare()}, Body: body}
-	err = g.Client.Encode(g.Context, msg)
-	if err != nil {
-		return err
-	}
-
-	start := msg.StartElement()
-
-	d := xml.NewTokenDecoder(xmlstream.Token(start))
-	if _, err := d.Token(); err != nil {
-		return err
-	}
-	log.Println("GOFRA JUST BEFORE CALLING SEND IN SENDMESSAGE")
-	err = g.Client.Send(g.Context, d)
-	log.Println("GOFRA JUST AFTER CALLING SEND IN SENDMESSAGE")
-	return err
-}
-
-func (g *Gofra) EncodeMessage(to, body string, msgType stanza.MessageType, t xmlstream.TokenReadEncoder) error {
-	j, err := jid.Parse(to)
-	if err != nil {
-		return err
-	}
-	msg := MessageBody{Message: stanza.Message{Type: msgType, To: j.Bare()}, Body: body}
-	err = t.Encode(msg)
-	if err != nil {
-		return err
-	}
-	g.Logger.Println("BEFORE GOFRA's ENCODE")
-/* 	err = g.Client.Encode(g.context, msg)
-	g.Logger.Println("AFTER GOFRA's ENCODE", err) */
-	return nil
+	return g.Client.Encode(g.Context, msg)
 }
 
 func (g *Gofra) SendStanza(s interface{}) error {
-	err := g.Client.Encode(g.Context, s)
-	return err
+	return g.Client.Encode(g.Context, s)
 }
 
 /*
