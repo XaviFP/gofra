@@ -231,8 +231,10 @@ func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer,
 	if err != nil {
 		return nil, fmt.Errorf("error parsing address %q: %w", config.Jid, err)
 	}
+	// TODO Remember to remove workaround before publishing the project
 	var d dial.Dialer
 	d.NoLookup = true
+	////////////////////////
 	conn, err := d.Dial(ctx, "tcp", j)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing sesion: %w", err)
