@@ -134,7 +134,6 @@ func (g *Gofra) Connect() error{
 	}
 
 	g.Publish(Event{Name: "connected"})
-	//g.SendMessage("vaulor@blastersklan.com", "Harooooo", stanza.ChatMessage)
 	//return gofra.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))
 	return g.Client.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 
@@ -216,38 +215,6 @@ func (stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEnco
 
 /* func (stanzaHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 	return errFailTest
-} */
-/* // Entry point for presence stanzas
-func handlePresence(s xmpp.Sender, p stanza.Packet) {
-	pres, ok := p.(stanza.Presence)
-	if !ok {
-		log.Printf("Ignoring packet: %T\n", p)
-		return
-	} 
-	log.Printf("Body = %s - from = %s\n", pres.Name(), pres.From)
-	log.Println(gofra.Publish(
-		Event{
-			Name: "presenceReceived",
-			Payload: make(map[string]interface{}),
-			Stanza: p,
-		}))
-}
-
-// Entry point for message stanzas
-func handleMessage(s xmpp.Sender, p stanza.Packet) {
-	msg, ok := p.(stanza.Message)
-	if !ok {
-		log.Printf("Ignoring packet: %T\n", p)
-		return
-	}
-
-	gofra.Publish(
-		Event{
-			Name: "messageReceived",
-			Payload: make(map[string]interface{}),
-			Stanza: p,
-	})
-	log.Printf("Body = %s - from = %s\n", msg.Body, msg.From)
 } */
 
 type logWriter struct {
