@@ -19,14 +19,15 @@ import (
 )
 
 type Gofra struct {
-	config Config
-	events Events
+	config  Config
+	events  Events
 	plugins Plugins
-	Client *xmpp.Session
+	Client  *xmpp.Session
 	Context context.Context
-	Logger *log.Logger
-	Debug *log.Logger
-	mux *mux.ServeMux
+	Logger  *log.Logger
+	Debug   *log.Logger
+	mux     *mux.ServeMux
+	opts	[]mux.Option
 }
 
 type stanzaHandler struct{}
@@ -45,20 +46,23 @@ func NewGofra(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer, logg
 	}
 	opts := []mux.Option{
 		mux.Presence(stanza.AvailablePresence, xml.Name{}, stanzaHandler{}),
-		mux.Message(stanza.ChatMessage, xml.Name{}, stanzaHandler{}),
-		mux.Message(stanza.GroupChatMessage, xml.Name{}, stanzaHandler{}),
+		mux.Presence(stanza.UnavailablePresence, xml.Name{}, stanzaHandler{}),
+		mux.Message(stanza.ChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler{}),
+		mux.Message(stanza.GroupChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler{}),
 	}
-	mux := mux.New("jabber:client", opts...)
+
 	gofra = &Gofra{
-		config: config,
-		events: NewEvents(config),
+		config:  config,
+		events:  NewEvents(config),
 		plugins: NewPlugins(config),
-		Client: c,
+		Client:  c,
 		Context: ctx,
-		Logger: logger,
-		Debug: debug,
-		mux: mux,
+		Logger:  logger,
+		Debug:   debug,
 	}
+
+	gofra.AddMuxOptions(opts)
+
 	return gofra
 }
 
@@ -101,7 +105,7 @@ func (g *Gofra) SubscribeChain(eventName, pluginName string, handler ChainHandle
 }
 
 // Executes all event handlers subscribed to a particular event
-func (g *Gofra) Publish(event Event) Reply{
+func (g *Gofra) Publish(event Event) Reply {
 	return g.events.Publish(event)
 }
 
@@ -109,24 +113,39 @@ func (g *Gofra) SetPriority(eventName, pluginName string, options Options) error
 	return g.events.SetPriority(eventName, pluginName, options)
 }
 
+func (g *Gofra) AddMuxOption(o mux.Option) {
+	g.opts = append(g.opts, o)
+}
+
+func (g *Gofra) AddMuxOptions(opts []mux.Option) {
+	g.opts = append(g.opts, opts...)
+}
+
 /////////////////////////////////////////////////
 
-func (g *Gofra) Init() error{
+func (g *Gofra) Init() error {
 	// Initialize just once
 	if initialized {
 		return nil
 	}
 
 	initialized = true
+
+
 	//Initialize plugins
-	err := g.plugins.Init(g.config, g); if err != nil {
+	err := g.plugins.Init(g.config, g)
+	if err != nil {
 		return err
 	}
+
+	//Initialize stanza multiplexer after registering all plugin-specific routes
+	g.mux = mux.New("jabber:client", g.opts...)
+
 	g.Publish(Event{Name: "initialized"})
 	return nil
 }
 
-func (g *Gofra) Connect() error{
+func (g *Gofra) Connect() error {
 	// Send initial presence to let the server know we want to receive messages.
 	err := g.Client.Send(gofra.Context, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
 	if err != nil {
@@ -134,55 +153,17 @@ func (g *Gofra) Connect() error{
 	}
 
 	g.Publish(Event{Name: "connected"})
-	//return gofra.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))
-	return g.Client.Serve(xmpp.HandlerFunc(func(t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
 
-		if start.Name.Local == "message" {
-			d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(*start), t))
-			if _, err := d.Token(); err != nil {
-				return err
-			}
-
-			msg := MessageBody{}
-			err = d.DecodeElement(&msg, start)
-			if err != nil && err != io.EOF {
-				g.Logger.Printf("Error decoding message: %q", err)
-				return nil
-			}
-
-			if msg.Body == "" || msg.Type != stanza.ChatMessage {
-				return nil
-			}
-			g.Debug.Println("THIS STANZA WAS A MESSAGE")
-			e := Event{
-				Name: "messageReceived",
-				Payload: make(map[string]interface{}),
-			}
-			e.SetStanza(&msg)
-
-			defer func() {
-				go g.Publish(e)
-			}()
-			return nil
-		}
-		if start.Name.Local == "presence" {
-			g.Debug.Println("THIS STANZA WAS A PRESENCE")
-		}
-		return nil
-	}))
-
+	return gofra.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))
 }
 
 func (stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
-	start := msg.StartElement()
+	gofra.Logger.Printf("Message received: %v", msg)
 
-	d := xml.NewTokenDecoder(xmlstream.MultiReader(xmlstream.Token(&start), t))
-	if _, err := d.Token(); err != nil {
-		return err
-	}
-
+	d := xml.NewTokenDecoder(t)
 	msgStruct := MessageBody{}
-	err := d.DecodeElement(&msgStruct, &start)
+	err := d.Decode(&msgStruct)
+
 	if err != nil && err != io.EOF {
 		gofra.Logger.Printf("Error decoding message: %q", err)
 		return nil
@@ -194,28 +175,56 @@ func (stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEnco
 
 	gofra.Logger.Printf("Message received: %v, with body: %q", msgStruct, msgStruct.Body)
 	e := Event{
-		Name: "messageReceived",
+		Name:    "messageReceived",
 		Payload: make(map[string]interface{}),
 	}
-	e.SetStanza(msg)
-	log.Println(gofra.Publish(e))
+	e.SetStanza(msgStruct)
+
+	defer func() {
+		go gofra.Publish(e)
+	}()
+
 	return nil
 }
 
+// Prevent same presence to be handled more than once.
+// Using an empty xml.Name in the handler registration creates a wildcard that makes the handler run for every inner element in the stanza
+var lastP stanza.Presence
 func (stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEncoder) error {
+	if lastP.From.String() == p.From.String() && lastP.To.String() == p.To.String() && lastP.Type == p.Type {
+		return nil
+	}
+	lastP = p
 	gofra.Logger.Printf("Presence received: %v", p)
 	e := Event{
-		Name: "presenceReceived",
+		Name:    "presenceReceived",
 		Payload: make(map[string]interface{}),
 	}
+	//TODO use presence extended fields struct as decode receiver like MessageBody{}
 	e.SetStanza(p)
-	log.Println(gofra.Publish(e))
+
+	defer func() {
+		go gofra.Publish(e)
+	}()
+
 	return nil
 }
 
-/* func (stanzaHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	return errFailTest
-} */
+//TODO add proper IQ handling
+func (stanzaHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+	gofra.Logger.Printf("Presence received: %v", iq)
+	e := Event{
+		Name:    "iqReceived",
+		Payload: make(map[string]interface{}),
+	}
+	e.SetStanza(iq)
+
+	defer func() {
+		go gofra.Publish(e)
+	}()
+
+	return nil
+}
 
 type logWriter struct {
 	logger *log.Logger
@@ -226,7 +235,7 @@ func (lw logWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer, logger, debug *log.Logger) (*xmpp.Session, error){
+func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer, logger, debug *log.Logger) (*xmpp.Session, error) {
 	j, err := jid.Parse(config.Jid)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing address %q: %w", config.Jid, err)
@@ -234,7 +243,6 @@ func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer,
 	// TODO Remember to remove workaround before publishing the project
 	var d dial.Dialer
 	d.NoLookup = true
-	////////////////////////
 	conn, err := d.Dial(ctx, "tcp", j)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing sesion: %w", err)
