@@ -10,9 +10,7 @@ import (
 	"log"
 	"os"
 	"strings"
-/* 	"encoding/xml"
 
-	"mellium.im/xmlstream" */
 	"mellium.im/xmpp/stanza"
 )
 
@@ -56,23 +54,21 @@ func checkConfig(config gofra.Config) {
 }
 
 func handleMessage(e gofra.Event) gofra.Reply {
-	msg, ok := e.GetStanza().(*gofra.MessageBody)
+	msg, ok := e.GetStanza().(gofra.MessageBody)
 	if !ok {
 		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", e.GetStanza())
-		return gofra.Reply{nil, false, true}
-	}
-	if msg == nil {
-		g.Logger.Println("Error msg is nil in command plugin")
 		return gofra.Reply{nil, false, true}
 	}
 
 	if msg.Body == "" {
 		return gofra.Reply{nil, false, true}
 	}
+
 	command := ""
 	if !strings.HasPrefix(msg.Body, c.Plugins[name]["commandChar"].(string)) {
 		return gofra.Reply{nil, false, true}
 	}
+
 	command = strings.Split(msg.Body, " ")[0][1:]
 	msgType := msg.Type
 	to := msg.From
@@ -85,7 +81,7 @@ func handleMessage(e gofra.Event) gofra.Reply {
 	if !reply.Empty && reply.GetAnswer() != "" {
 		r := gofra.MessageBody{Message: stanza.Message{Type: msgType, To: to.Bare()}, Body: reply.GetAnswer()}
 		err := g.Client.Encode(g.Context, r)
-		//defer trc.Close()
+
 		if err != nil {
 			g.Logger.Println("Error encoding message in command Plugin: ", err)
 		}
