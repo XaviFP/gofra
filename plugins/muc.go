@@ -5,21 +5,20 @@ muc is a gofra plugin that allows joining muti-user chatrooms and keeps track of
 package main
 
 import (
-	"fmt"
-	"log"
-
 	"gofra/gofra"
-	"strings"
 
+	"mellium.im/xmpp/jid"
+	"mellium.im/xmpp/muc"
 	"mellium.im/xmpp/stanza"
 )
 
 type plugin string
 
-var g gofra.API
+var g *gofra.Gofra
 var config gofra.Config
-var mucs = make(map[string]string)
-var joinedMucs = make(map[string][]string)
+var mucs = make(map[string]jid.JID)
+var client = &muc.Client{}
+var occupants = make(map[string][]string)
 
 func (p plugin) Name() string {
 	return "MUC"
@@ -30,7 +29,7 @@ func (p plugin) Description() string {
 }
 
 func (p plugin) Init(conf gofra.Config, api gofra.API) {
-	g = api
+	g = api.(*gofra.Gofra)
 	config = conf
 	prepareMUCs()
 	g.Subscribe(
@@ -45,98 +44,87 @@ func (p plugin) Init(conf gofra.Config, api gofra.API) {
 		handlePresence,
 		gofra.Options{},
 	)
+	g.AddMuxOption(muc.HandleClient(client))
 }
 
-func prepareMUCs () {
+func prepareMUCs() {
 	if len(config.Mucs) == 0 {
-		log.Printf("No MUCs in config: %v", config)
+		g.Logger.Printf("No MUCs in config: %v", config)
 		return
 	}
 	for _, muc := range config.Mucs {
-		mucs[muc.MucJid] = muc.Nick
+		occupants[muc.Jid] = []string{}
 	}
 }
 
-func handlePresence(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
-	pres := e.GetStanza()
+func handlePresence(e gofra.Event) (gofra.Reply){
+	pres, ok := e.GetStanza().(stanza.Presence)
 	if !ok {
-		log.Println("Ignoring packet: %T\n", e.Stanza)
-		return gofra.Reply{Empty: true}, e
+		g.Logger.Println("Ignoring packet: %T\n", pres)
+		return gofra.Reply{Empty: true}
 	}
+
 	occupantNick := ""
 	//Parse presence and determine if it's MUC-related
-	jid := strings.Split(pres.From, "/")
-	mucJid := jid[0]
-	if len(jid) > 1 {
-		occupantNick = strings.Split(pres.From, "/")[1]
+	mucJid := pres.From.Bare().String()
+
+	if pres.From.Resourcepart() != "" {
+		occupantNick = pres.From.Resourcepart()
 	}
-	_, exists := mucs[mucJid]
+	_, exists := occupants[mucJid]
+
 	if !exists {
-		log.Println("MUC " + mucJid + " not found in config")
-		return gofra.Reply{Ok: false, Empty: true}, e
+		g.Logger.Println("MUC " + mucJid + " not found in config")
+		return gofra.Reply{Ok: false, Empty: true}
 	}
 
-	log.Println("Joined MUCs: ", joinedMucs)
-	occupants, exist := joinedMucs[mucJid]
-	if !exist {
-		joinedMucs[mucJid] = []string{}
-		g.Publish(
-			gofra.Event{
-				Name: "mucJoined",
-		})
-	}
 	if occupantNick == "" {
-		return gofra.Reply{Ok: true, Empty: true}, e
+		return gofra.Reply{Ok: true, Empty: true}
 	}
-	if !pres.Attrs.Type.IsEmpty() && pres.Type != stanza.PresenceTypeUnavailable {
-		leaveRoom(joinedMucs[mucJid], occupantNick)
+
+	if pres.Type == stanza.UnavailablePresence {
+		occupantLeft(mucJid, occupantNick)
 		g.Publish(
 			gofra.Event{
-				Name: "occupantLeftMuc",
+				//TODO send muc and occupant in the event
+				Name: "muc/occupantLeftMuc",
 		})
 	}
 
-	alreadyIn := false
-	for _, occupant := range occupants {
-		if occupant == occupantNick {
-			alreadyIn = true
-			break
-		}
+	if !occupantJoined(mucJid, occupantNick) {
+		return gofra.Reply{Ok: true, Empty: true}
 	}
-	if alreadyIn {
-		return gofra.Reply{Ok: true, Empty: true}, e
-	}
-	if !joinRoom(joinedMucs[mucJid], occupantNick) {
-		return gofra.Reply{Ok: true, Empty: true}, e
-	}
+
 	g.Publish(
 		gofra.Event{
-			Name: "occupantJoinedMuc",
+			//TODO send muc and occupant in the event
+			Name: "muc/occupantJoinedMuc",
 	})
-	return gofra.Reply{Ok: true, Empty: true}, e
+	return gofra.Reply{Ok: true, Empty: true}
 }
 
-func leaveRoom(room []string, occupant string) {
+func occupantLeft(room, occupant string) {
 	position, exists := isOccupant(room, occupant)
 	if !exists {
 		return
 	}
-	room[position] = room[len(room)-1]
-    room = room[:len(room)-1]
+	occupants[room][position] = occupants[room][len(room)-1]
+    occupants[room] = occupants[room][:len(room)-1]
 }
 
-func joinRoom(room[]string, occupant string) bool{
+func occupantJoined(room, occupant string) bool{
 	_, exists := isOccupant(room, occupant)
 	if exists {
 		return false
 	}
-	room = append(room, occupant)
+	occupants[room] = append(occupants[room], occupant)
+	g.Logger.Println(occupants)
 	return true
 }
 
-func isOccupant(room []string, occupant string) (int, bool) {
+func isOccupant(room, occupant string) (int, bool) {
 	position := -1
-	for index, occ := range room {
+	for index, occ := range occupants[room] {
 		if occ == occupant {
 			position = index
 			break
@@ -145,39 +133,51 @@ func isOccupant(room []string, occupant string) (int, bool) {
 	return position, position != -1
 }
 
-func joinMUCs(e gofra.Event, _ *gofra.Event) (gofra.Reply, gofra.Event){
+func joinMUCs(e gofra.Event) (gofra.Reply){
 	if len(config.Mucs) == 0 {
-		return gofra.Reply{Empty: true}, e
+		return gofra.Reply{Empty: true}
 	}
 	for _, muc := range config.Mucs {
 		joinMUC(muc)
 	}
-	return gofra.Reply{Empty: true}, e
+	return gofra.Reply{Empty: true}
 }
 
 func joinMUC(mc gofra.MucConfig){
-	//Join MUC
-	mucJoinPres := mucJoinPresence(config.Jid, mc.Nick, mc.MucJid, mc.MucJoinHistory)
-	err := g.SendStanza(mucJoinPres)
-	if err != nil {
-		log.Println(err)
-		fmt.Printf("Couldn't send presence stanza to join muc %s", mc.MucJid)
+	g.Logger.Println("Tried to join room: " + mc.Jid)
+	j := jid.MustParse(mc.Jid + "/" + mc.Nick)
+	_, exists := mucs[mc.Jid]
+	if exists {
+		return
 	}
-}
+	mucOpts := []muc.Option{}
 
-func mucJoinPresence(selfJid, nick, mucJid string, mucJoinHistory int) *stanza.Presence {
-	presenceStanza := stanza.Presence{
-		Attrs: stanza.Attrs{
-			To:   mucJid + "/" + nick,
-			From: selfJid,
-		},
-		Extensions: []stanza.PresExtension{
-			stanza.MucPresence{
-				History: stanza.History{MaxStanzas: stanza.NewNullableInt(mucJoinHistory)},
-			},
-		},
+	if mc.Nick != "" {
+		mucOpts = append(mucOpts, muc.Nick(mc.Nick))
+	} else {
+		mucOpts = append(mucOpts, muc.Nick(config.Nick))
 	}
-	return &presenceStanza
-} 
+
+	mucOpts = append(mucOpts, muc.MaxHistory(uint64(mc.JoinHistory)))
+
+	if mc.Password != "" {
+		mucOpts = append(mucOpts, muc.Password(mc.Password))
+	}
+
+	go func() {
+		_, err := client.Join(g.Context, jid.MustParse(mc.Jid + "/" + mc.Nick), g.Client, mucOpts...)
+
+		if err != nil {
+			g.Logger.Fatalf("error joining: %v", err)
+		}
+
+		e := gofra.Event{Name: "muc/joinedRoom", Payload: map[string]interface{}{"roomJid": mc.Jid}}
+
+		occupantJoined(mc.Jid, mc.Nick)
+		mucs[mc.Jid] = j
+
+		g.Publish(e)
+	}()
+}
 
 var Plugin plugin
