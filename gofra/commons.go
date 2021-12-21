@@ -45,8 +45,9 @@ type Config struct {
 // Per-MUC configuration
 type MucConfig struct {
 	Nick string `yaml:"mucNick"`
-	MucJoinHistory int `yaml:"mucJoinHistory"`
-	MucJid string `yaml:"mucJid"`
+	JoinHistory int `yaml:"mucJoinHistory"`
+	Jid string `yaml:"mucJid"`
+	Password string `yaml:"mucPasword"`
 }
 
 //////////////////// EVENTS /////////////////////
