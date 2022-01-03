@@ -84,7 +84,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 	 * !remind [target] [time] message:[message]
 	 * !remind [message]
 	 */
-	if args[0] != config.Plugins["Commands"]["commandChar"].(string) + commandStr {
+	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
 		r = gofra.Reply{Ok: false, Empty: false}
 		r.SetAnswer("Wrong command")
 		return r
@@ -102,15 +102,15 @@ func handleReminder(e gofra.Event) gofra.Reply {
 	msg, ok := e.GetStanza().(*gofra.MessageBody)
 	if !ok {
 		g.Logger.Printf("Ignoring packet: %T\n", e.GetStanza())
-		return gofra.Reply{nil, false, true}
+		return gofra.Reply{Empty: true}
 	}
 	if msg == nil {
 		g.Logger.Println("Error msg is nil in command plugin")
-		return gofra.Reply{nil, false, true}
+		return gofra.Reply{Empty: true}
 	}
 
 	if msg.Body == "" {
-		return gofra.Reply{nil, false, true}
+		return gofra.Reply{Empty: true}
 	}
 	now := time.Now()
 	segs := now.Unix()

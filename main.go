@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"flag"
+
 	/* "fmt" */
 	"io"
 	"io/ioutil"
@@ -14,7 +15,7 @@ import (
 	"os"
 	"os/signal"
 
-	gofra "gofra/gofra"
+	"gofra/gofra"
 
 	"gopkg.in/yaml.v3"
 )
@@ -49,7 +50,7 @@ func (lw logWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func getStreamLoggers(config gofra.Config) (*io.Writer, *io.Writer, log.Logger, log.Logger, error){
+func getStreamLoggers(config gofra.Config) (*io.Writer, *io.Writer, log.Logger, log.Logger, error) {
 	// Setup logging and verbose logging that's disabled by default.
 	logger := log.New(os.Stderr, "", log.LstdFlags)
 	debug := log.New(io.Discard, "DEBUG ", log.LstdFlags)
@@ -125,10 +126,12 @@ func main() {
 			}
 		}
 	}()
+
 	err := g.Init()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
 	err = g.Connect()
 	if err != nil {
 		log.Fatal(err.Error())

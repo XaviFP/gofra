@@ -18,6 +18,7 @@ type plugin string
 
 const defaultCommandChar = "!"
 const name = "Commands"
+
 var g *gofra.Gofra
 var c gofra.Config
 
@@ -57,16 +58,16 @@ func handleMessage(e gofra.Event) gofra.Reply {
 	msg, ok := e.GetStanza().(gofra.MessageBody)
 	if !ok {
 		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", e.GetStanza())
-		return gofra.Reply{nil, false, true}
+		return gofra.Reply{Empty: true}
 	}
 
 	if msg.Body == "" {
-		return gofra.Reply{nil, false, true}
+		return gofra.Reply{Empty: true}
 	}
 
 	command := ""
 	if !strings.HasPrefix(msg.Body, c.Plugins[name]["commandChar"].(string)) {
-		return gofra.Reply{nil, false, true}
+		return gofra.Reply{Empty: true}
 	}
 
 	command = strings.Split(msg.Body, " ")[0][1:]

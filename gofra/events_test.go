@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestNewEvents(t *testing.T) {
+func TestEvents_NewEvents(t *testing.T) {
 	events := NewEvents(Config{})
 	if len(events) != 0 {
 		t.Error(`NewEvents returns a non empty Events object`)
@@ -12,12 +12,13 @@ func TestNewEvents(t *testing.T) {
 }
 
 var ran bool
+
 func setRan(b bool) {
 	ran = b
 }
-func TestPublishSubscribeEvent(t *testing.T) {
+func TestEvents_PublishSubscribeEvent(t *testing.T) {
 	events := NewEvents(Config{})
-	
+
 	events.Subscribe(
 		"addedEventListener",
 		"testPlugin",
@@ -36,9 +37,9 @@ func TestPublishSubscribeEvent(t *testing.T) {
 func exampleHandler(e Event) Reply {
 	return Reply{}
 }
-func TestSetpriority(t *testing.T) {
+func TestEvents_Setpriority(t *testing.T) {
 	events := NewEvents(Config{})
-	
+
 	events.Subscribe(
 		"addedEventListener",
 		"testPlugin1",
@@ -53,13 +54,12 @@ func TestSetpriority(t *testing.T) {
 		nil,
 		Options{Priority: 2},
 	)
-	if events["addedEventListener"][0].PluginName != "testPlugin2"{
+	if events["addedEventListener"][0].PluginName != "testPlugin2" {
 		t.Error(`Event handlers are no sorted correctly`)
 	}
 	events.SetPriority("addedEventListener", "testPlugin1", Options{Priority: 3})
 
-	if events["addedEventListener"][0].PluginName != "testPlugin1"{
+	if events["addedEventListener"][0].PluginName != "testPlugin1" {
 		t.Error(`SetPriority does not sort correctly`)
 	}
 }
-

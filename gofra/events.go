@@ -6,43 +6,50 @@ import (
 	"sort"
 )
 
+// TODO try to rename Events, EventHandler, Hanlder, ChainHandler, etc..
 type Events map[string][]EventHandler
 
-func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain ChainHandler, op Options){
+func NewEvents(config Config) Events {
+	return make(Events)
+}
+
+func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain ChainHandler, op Options) {
 	if e[eventName] == nil {
 		e[eventName] = []EventHandler{}
 	}
+
 	e[eventName] = append(
 		e[eventName],
 		EventHandler{
-			Handler: handler,
-			Priority: op.Priority,
+			Handler:    handler,
+			Priority:   op.Priority,
 			PluginName: pluginName,
-			Chain: chain,
+			Chain:      chain,
 		},
 	)
+
 	e.sortByPriority(eventName)
+
 	event := Event{
-		Name:"addedEventListener",
+		Name: "addedEventListener",
 		Payload: map[string]interface{}{
-			"event": eventName,
-			"plugin": pluginName,
-			"chained": chain != nil,
+			"event":    eventName,
+			"plugin":   pluginName,
+			"chained":  chain != nil,
 			"priority": op.Priority,
 		},
 	}
+
 	e.Publish(event)
 }
 
-func (e Events) Publish(event Event) Reply{
-	handlers, exist := e[event.Name]
+func (e Events) Publish(event Event) Reply {
 	var reply Reply
 
+	handlers, exist := e[event.Name]
 	if !exist || len(handlers) == 0 {
-		fmt.Println("No handlers for event: " + event.Name)
-		reply = Reply{Payload: make(map[string]interface{}), Ok: false, Empty: false}
-		reply.SetNoHandlers(true)
-		return reply
+		fmt.Println("No handlers for event: " + event.Name) // TODO use logger (modify Events type with logger as attribute and pass it down from gofra through NewEvents)
+		return Reply{}
 	}
 
 	answered := false
@@ -52,7 +59,7 @@ func (e Events) Publish(event Event) Reply{
 		if handler.Chain != nil {
 			chainedHandlers = append(chainedHandlers, handler)
 		} else {
-			r := runHandlerSafely(handler,event)
+			r := runHandlerSafely(handler, event)
 			if !answered && !r.Empty {
 				reply = r
 				answered = true
@@ -61,6 +68,8 @@ func (e Events) Publish(event Event) Reply{
 		}
 	}
 
+	reply.EventHandled = true
+
 	if len(chainedHandlers) == 0 {
 		return reply
 	}
@@ -68,34 +77,11 @@ func (e Events) Publish(event Event) Reply{
 	for _, handler := range chainedHandlers {
 		runChainHandlerSafely(handler, &event)
 	}
+
 	return reply
 }
 
-func runHandlerSafely(h EventHandler, e Event) Reply {
-	defer func() {
-        if err := recover(); err != nil {
-            log.Printf("plugin '%s' handler for event '%s' failed: %s", h.PluginName, e.Name, err)
-        }
-    }()
-
-	return h.Handler(e)
-}
-
-func runChainHandlerSafely(h EventHandler, e *Event) {
-	defer func() {
-        if err := recover(); err != nil {
-            log.Printf("plugin '%s' chain handler for event '%s' failed: %s", h.PluginName, e.Name, err)
-        }
-    }()
-
-	h.Chain(e)
-}
-
-func NewEvents(config Config) Events {
-	return make(Events)
-}
-
-func (e Events) SetPriority(eventName, pluginName string, options Options) error{
+func (e Events) SetPriority(eventName, pluginName string, options Options) error {
 	var priorityChanged bool
 	var pluginFound bool
 	_, exist := e[eventName]
@@ -124,8 +110,105 @@ func (e Events) SetPriority(eventName, pluginName string, options Options) error
 }
 
 // Sorts handlers in descending priority order
-func (e Events)sortByPriority(eventName string){
+func (e Events) sortByPriority(eventName string) {
 	sort.Slice(e[eventName], func(i, j int) bool {
 		return e[eventName][i].Priority > e[eventName][j].Priority
 	})
+}
+
+type Handler func(event Event) Reply
+type ChainHandler func(accumulated *Event)
+
+type EventHandler struct {
+	Handler    Handler
+	Priority   int64
+	PluginName string
+	Chain      ChainHandler
+}
+
+type Event struct {
+	Name    string
+	Payload map[string]interface{}
+}
+
+func (e *Event) SetStanza(stanza interface{}) {
+	if e.Payload == nil {
+		e.Payload = make(map[string]interface{})
+	}
+	e.Payload["stanza"] = stanza
+}
+
+func (e *Event) GetStanza() interface{} {
+	if e.Payload == nil {
+		e.Payload = make(map[string]interface{})
+	}
+	stanza, exists := e.Payload["stanza"]
+	if !exists {
+		return nil
+	}
+	return stanza
+}
+
+// TODO DELETE
+type Options struct {
+	Priority int64
+	Chain    bool
+}
+
+type Reply struct {
+	Payload      map[string]interface{}
+	Ok           bool
+	Empty        bool
+	EventHandled bool
+}
+
+// Example
+// type BetweenPlugins struc{
+// 	isEventHandledBySomone bool
+// 	answer strign
+// }
+
+// Data access interface for text-based commands to answer to a suitable message.
+func (r *Reply) SetAnswer(answer string) {
+	if r.Payload == nil {
+		r.Payload = make(map[string]interface{})
+	}
+	r.Payload["answer"] = answer
+}
+
+// Data access interface for command plugin to receive the answer from an specific command.
+func (r *Reply) GetAnswer() string {
+	if r.Payload == nil {
+		r.Payload = make(map[string]interface{})
+	}
+	answer, exists := r.Payload["answer"]
+	if !exists {
+		return ""
+	}
+	strAnswer, ok := answer.(string)
+	if !ok {
+		return ""
+	}
+	return strAnswer
+}
+
+// TODO rename without safely
+func runHandlerSafely(h EventHandler, e Event) Reply {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("plugin '%s' handler for event '%s' failed: %s", h.PluginName, e.Name, err)
+		}
+	}()
+
+	return h.Handler(e)
+}
+
+func runChainHandlerSafely(h EventHandler, e *Event) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("plugin '%s' chain handler for event '%s' failed: %s", h.PluginName, e.Name, err)
+		}
+	}()
+
+	h.Chain(e)
 }
