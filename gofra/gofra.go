@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 
 	"mellium.im/sasl"
 	"mellium.im/xmpp"
@@ -17,47 +16,59 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
+// Interface providing plugins the needed tools to interact with the engine
+// and/or other plugins
+type API interface {
+	SendMessage(to, message string, msgType stanza.MessageType) error
+	Subscribe(eventName, pluginName string, handler Handler, priority int)
+	SubscribeChain(eventName, pluginName string, handler ChainHandler, priority int)
+	Publish(event Event) Reply
+	SetPriority(eventName, pluginName string) error
+	SendStanza(stanza interface{}) error
+	// Add AddMuxOption and AddMuxOptions if required
+}
 type Gofra struct {
-	config  Config
-	events  Events
-	plugins Plugins
-	Client  *xmpp.Session
-	Context context.Context
-	Logger  *log.Logger
-	Debug   *log.Logger
-	mux     *mux.ServeMux // TODO: Rename to ServeMux
-	opts    []mux.Option  // TODO: muxOpts or more specific name (currently it looks like Gofra opts, not ServeMux opts)
+	config      Config
+	events      Events
+	plugins     Plugins
+	Client      *xmpp.Session
+	Context     context.Context
+	Logger      Logger
+	mux         *mux.ServeMux // TODO: Rename to ServeMux
+	opts        []mux.Option  // TODO: muxOpts or more specific name (currently it looks like Gofra opts, not ServeMux opts)
+	initialized bool
 }
 
-var gofra *Gofra
-var initialized bool
+func NewGofra(ctx context.Context, config Config) *Gofra {
+	logger := NewLogger(config.Debug)
+	xmlIn, xmlOut := getStreamLoggers(config.LogXML)
 
-func NewGofra(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer, logger, debug *log.Logger) *Gofra {
-	if gofra != nil {
-		return gofra
-	}
-
-	c, err := newXmppClient(ctx, config, xmlIn, xmlOut, logger, debug)
+	c, err := newXmppClient(ctx, config, xmlIn, xmlOut, logger)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	opts := []mux.Option{
-		mux.Presence(stanza.AvailablePresence, xml.Name{}, stanzaHandler{}),
-		mux.Presence(stanza.UnavailablePresence, xml.Name{}, stanzaHandler{}),
-		mux.Message(stanza.ChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler{}),
-		mux.Message(stanza.GroupChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler{}),
-	}
-
-	gofra = &Gofra{
+	gofra := &Gofra{
 		config:  config,
 		events:  NewEvents(config),
 		plugins: NewPlugins(config),
 		Client:  c,
 		Context: ctx,
 		Logger:  logger,
-		Debug:   debug,
 		// opts:    opts, // TODO check if this is possible to avoid the AddMuxOptions
+	}
+
+	publish := func(e Event) {
+		gofra.Publish(e)
+	}
+
+	stanzaHandler := stanzaHandler{logger: logger, publish: publish}
+
+	opts := []mux.Option{
+		mux.Presence(stanza.AvailablePresence, xml.Name{}, stanzaHandler),
+		mux.Presence(stanza.UnavailablePresence, xml.Name{}, stanzaHandler),
+		mux.Message(stanza.ChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler),
+		mux.Message(stanza.GroupChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler),
 	}
 
 	gofra.AddMuxOptions(opts)
@@ -89,15 +100,15 @@ the event and pass on a modified set, there's the chain option. Handlers set to 
 are executed after all non-accumulative ones by descending priority order. Accumulated
 event values are received through the event pointer argument where changes are expecteted
 to be performed in order for the following chained handlers to recieve them. */
-func (g *Gofra) Subscribe(eventName, pluginName string, handler Handler, options Options) {
-	g.Logger.Println("Plugin " + pluginName + " subscribed handler to event " + eventName)
-	g.events.Subscribe(eventName, pluginName, handler, nil, options)
+func (g *Gofra) Subscribe(eventName, pluginName string, handler Handler, priority int) {
+	g.Logger.Info.Println("Plugin " + pluginName + " subscribed handler to event " + eventName)
+	g.events.Subscribe(eventName, pluginName, handler, nil, priority)
 }
 
 // TODO change naming and method comments between Subscribe and SubscribeChain
-func (g *Gofra) SubscribeChain(eventName, pluginName string, handler ChainHandler, options Options) {
-	g.Logger.Println("Plugin " + pluginName + " subscribed chained handler to event " + eventName)
-	g.events.Subscribe(eventName, pluginName, nil, handler, options)
+func (g *Gofra) SubscribeChain(eventName, pluginName string, handler ChainHandler, priority int) {
+	g.Logger.Info.Println("Plugin " + pluginName + " subscribed chained handler to event " + eventName)
+	g.events.Subscribe(eventName, pluginName, nil, handler, priority)
 }
 
 // Executes all event handlers subscribed to a particular event
@@ -105,8 +116,8 @@ func (g *Gofra) Publish(event Event) Reply {
 	return g.events.Publish(event)
 }
 
-func (g *Gofra) SetPriority(eventName, pluginName string, options Options) error {
-	return g.events.SetPriority(eventName, pluginName, options)
+func (g *Gofra) SetPriority(eventName, pluginName string) error {
+	return g.events.SetPriority(eventName, pluginName)
 }
 
 func (g *Gofra) AddMuxOption(o mux.Option) {
@@ -120,11 +131,11 @@ func (g *Gofra) AddMuxOptions(opts []mux.Option) {
 /////////////////////////////////////////////////
 
 func (g *Gofra) Init() error {
-	if initialized {
+	if g.initialized {
 		return nil
 	}
 
-	initialized = true
+	g.initialized = true
 
 	// Initialize plugins
 	err := g.plugins.Init(g.config, g)
@@ -142,37 +153,27 @@ func (g *Gofra) Init() error {
 
 func (g *Gofra) Connect() error {
 	// Send initial presence
-	err := g.Client.Send(gofra.Context, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
+	err := g.Client.Send(g.Context, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
 	if err != nil {
 		return fmt.Errorf("error sending initial presence: %w", err)
 	}
 
 	g.Publish(Event{Name: "connected"})
 
-	return gofra.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))
+	return g.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))
 }
 
-type logWriter struct {
-	logger *log.Logger
-}
-
-func (lw logWriter) Write(p []byte) (int, error) {
-	lw.logger.Printf("%s", p)
-
-	return len(p), nil
-}
-
-func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer, logger, debug *log.Logger) (*xmpp.Session, error) {
+func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut io.Writer, logger Logger) (*xmpp.Session, error) {
 	j, err := jid.Parse(config.Jid)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing address %q: %w", config.Jid, err)
 	}
 	// TODO Remember to remove workaround before publishing the project
 	var d dial.Dialer
-
 	d.NoLookup = true
-	conn, err := d.Dial(ctx, "tcp", j)
+	//////////////////////////////////////////////////////////////////
 
+	conn, err := d.Dial(ctx, "tcp", j)
 	if err != nil {
 		return nil, fmt.Errorf("error dialing sesion: %w", err)
 	}
@@ -188,8 +189,8 @@ func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut *io.Writer,
 				}),
 				xmpp.SASL("", config.Password, sasl.ScramSha1Plus, sasl.ScramSha1, sasl.Plain),
 			},
-			TeeIn:  logWriter{log.New(os.Stdout, "IN ", log.LstdFlags)},
-			TeeOut: logWriter{log.New(os.Stdout, "OUT ", log.LstdFlags)},
+			TeeIn:  xmlIn,
+			TeeOut: xmlOut,
 		}
 	}))
 	if err != nil {

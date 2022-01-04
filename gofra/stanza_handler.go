@@ -13,25 +13,28 @@ type MessageBody struct {
 	Body string `xml:"body"`
 }
 
-type stanzaHandler struct{}
+type stanzaHandler struct {
+	logger  Logger
+	publish func(e Event)
+}
 
-func (stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
-	gofra.Logger.Printf("Message received: %v", msg)
+func (h stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
+	h.logger.Debug.Printf("Message received: %v", msg)
 
 	d := xml.NewTokenDecoder(t)
 	msgStruct := MessageBody{}
 	err := d.Decode(&msgStruct)
 
 	if err != nil && err != io.EOF {
-		gofra.Logger.Printf("Error decoding message: %q", err)
+		h.logger.Error.Printf("Error decoding message: %q", err)
 		return nil
 	}
 
 	if msgStruct.Body == "" || msgStruct.Type != stanza.ChatMessage {
-		gofra.Logger.Printf("Message received has no body")
+		h.logger.Debug.Printf("Message received has no body")
 	}
 
-	gofra.Logger.Printf("Message received: %v, with body: %q", msgStruct, msgStruct.Body)
+	h.logger.Debug.Printf("Message received: %v, with body: %q", msgStruct, msgStruct.Body)
 	e := Event{
 		Name:    "messageReceived",
 		Payload: make(map[string]interface{}),
@@ -39,7 +42,7 @@ func (stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEnco
 	e.SetStanza(msgStruct)
 
 	defer func() {
-		go gofra.Publish(e)
+		go h.publish(e)
 	}()
 
 	return nil
@@ -57,13 +60,13 @@ func isLastPresence(p stanza.Presence) bool {
 	return false
 }
 
-func (stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEncoder) error {
+func (h stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEncoder) error {
 	if isLastPresence(p) {
 		return nil
 	}
 
 	lastP = p
-	gofra.Logger.Printf("Presence received: %v", p)
+	h.logger.Debug.Printf("Presence received: %v", p)
 
 	e := Event{
 		Name:    "presenceReceived",
@@ -73,15 +76,16 @@ func (stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEnco
 	e.SetStanza(p)
 
 	defer func() {
-		go gofra.Publish(e)
+		go h.publish(e)
 	}()
 
 	return nil
 }
 
 //TODO add proper IQ handling
-func (stanzaHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	gofra.Logger.Printf("Presence received: %v", iq)
+func (h stanzaHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
+	h.logger.Debug.Printf("Presence received: %v", iq)
+
 	e := Event{
 		Name:    "iqReceived",
 		Payload: make(map[string]interface{}),
@@ -89,7 +93,7 @@ func (stanzaHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start 
 	e.SetStanza(iq)
 
 	defer func() {
-		go gofra.Publish(e)
+		go h.publish(e)
 	}()
 
 	return nil

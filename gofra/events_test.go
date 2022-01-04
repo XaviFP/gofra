@@ -27,7 +27,7 @@ func TestEvents_PublishSubscribeEvent(t *testing.T) {
 			return Reply{}
 		},
 		nil,
-		Options{},
+		0,
 	)
 	if !ran {
 		t.Error(`Event subscribed didn't run`)
@@ -45,19 +45,19 @@ func TestEvents_Setpriority(t *testing.T) {
 		"testPlugin1",
 		exampleHandler,
 		nil,
-		Options{Priority: 1},
+		1,
 	)
 	events.Subscribe(
 		"addedEventListener",
 		"testPlugin2",
 		exampleHandler,
 		nil,
-		Options{Priority: 2},
+		2,
 	)
 	if events["addedEventListener"][0].PluginName != "testPlugin2" {
 		t.Error(`Event handlers are no sorted correctly`)
 	}
-	events.SetPriority("addedEventListener", "testPlugin1", Options{Priority: 3})
+	events.SetPriority("addedEventListener", "testPlugin1", 3)
 
 	if events["addedEventListener"][0].PluginName != "testPlugin1" {
 		t.Error(`SetPriority does not sort correctly`)

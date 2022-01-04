@@ -13,7 +13,7 @@ func NewEvents(config Config) Events {
 	return make(Events)
 }
 
-func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain ChainHandler, op Options) {
+func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain ChainHandler, priority int) {
 	if e[eventName] == nil {
 		e[eventName] = []EventHandler{}
 	}
@@ -22,7 +22,7 @@ func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain C
 		e[eventName],
 		EventHandler{
 			Handler:    handler,
-			Priority:   op.Priority,
+			Priority:   priority,
 			PluginName: pluginName,
 			Chain:      chain,
 		},
@@ -36,7 +36,7 @@ func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain C
 			"event":    eventName,
 			"plugin":   pluginName,
 			"chained":  chain != nil,
-			"priority": op.Priority,
+			"priority": priority,
 		},
 	}
 
@@ -81,7 +81,7 @@ func (e Events) Publish(event Event) Reply {
 	return reply
 }
 
-func (e Events) SetPriority(eventName, pluginName string, options Options) error {
+func (e Events) SetPriority(eventName, pluginName string) error {
 	var priorityChanged bool
 	var pluginFound bool
 	_, exist := e[eventName]
@@ -121,7 +121,7 @@ type ChainHandler func(accumulated *Event)
 
 type EventHandler struct {
 	Handler    Handler
-	Priority   int64
+	Priority   int
 	PluginName string
 	Chain      ChainHandler
 }
@@ -147,12 +147,6 @@ func (e *Event) GetStanza() interface{} {
 		return nil
 	}
 	return stanza
-}
-
-// TODO DELETE
-type Options struct {
-	Priority int64
-	Chain    bool
 }
 
 type Reply struct {

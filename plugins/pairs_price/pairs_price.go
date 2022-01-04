@@ -15,6 +15,7 @@ import (
 )
 
 type plugin string
+
 const commandStr = "price"
 const metadataPrefix = "https://api.cryptowat.ch/markets/"
 const metadataSufix = "/price"
@@ -49,17 +50,17 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	pair := defaultPair
 	argLine := e.Payload["commandBody"].(string)
 	args := strings.Split(argLine, " ")
-	if args[0] != config.Plugins["Commands"]["commandChar"].(string) + commandStr {
-		r = gofra.Reply{Ok: false, Empty: false}
+	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
+		r = gofra.Reply{Ok: false}
 		r.SetAnswer("Wrong command")
 		return r
 	}
-	
+
 	//Remove command and leave just the args for it
 	args = args[1:]
 	if argLine != "" {
 		if len(args) > 2 {
-			r = gofra.Reply{Ok: true, Empty: false}
+			r = gofra.Reply{Ok: true}
 			r.SetAnswer("Too many arguments")
 			return r
 		} else if len(args) == 2 {
@@ -80,14 +81,14 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	defer resp.Body.Close()
 	log.Println(resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		r = gofra.Reply{Ok: true, Empty: false}
+		r = gofra.Reply{Ok: true}
 		r.SetAnswer("Something went wrong")
 		return r
 	}
 	var result map[string]interface{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		r = gofra.Reply{Ok: true, Empty: false}
+		r = gofra.Reply{Ok: true}
 		r.SetAnswer("Invalid response")
 		return r
 	}
@@ -96,7 +97,7 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	resultMap := aux.(map[string]interface{})
 	priceField, ok := resultMap["price"]
 	if !ok {
-		r = gofra.Reply{Ok: true, Empty: false}
+		r = gofra.Reply{Ok: true}
 		r.SetAnswer("Price for pair not found")
 		return r
 	}
@@ -106,7 +107,7 @@ func handlePrice(e gofra.Event) gofra.Reply {
 
 	log.Println(price)
 
-	r = gofra.Reply{Ok: true, Empty: false}
+	r = gofra.Reply{Ok: true}
 	r.SetAnswer(price)
 	return r
 }

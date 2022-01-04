@@ -30,7 +30,7 @@ func (p plugin) Init(conf gofra.Config, api gofra.API) {
 		"exampleEvent",
 		p.Name(),
 		handleExampleEvent,
-		gofra.Options{},
+		0,
 	)
 }
 
@@ -38,19 +38,19 @@ func handleExampleEvent(e gofra.Event) gofra.Reply {
 	// do things with e
 	data := e.Payload
 	log.Println(data)
-	
+
 	// maybe trigger another event
 	reply := g.Publish(
 		gofra.Event{
 			Name: "newExampleEvent",
-	})
+		})
 	// if reply is empty return
 	if reply.Empty {
 		r := gofra.Reply{Empty: true}
 		r.Ok = reply.Ok
 		return r
 	}
-	
+
 	// get reply's content and work with it
 	data = reply.Payload
 	log.Println(data)

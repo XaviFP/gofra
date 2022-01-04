@@ -7,10 +7,22 @@ import (
 	"strings"
 )
 
+// Interface to be satisfied by any gofra plugin
+type Plugin interface {
+	Name() string
+	Description() string
+	Init(Config, API)
+}
+
+// Interface to be satisfied by plugins that need an execution loop
+// like, for example, an HTTP server. Run method is executed as a goroutine.
+type Runnable interface {
+	Run()
+}
+
 type Plugins map[string]Plugin
 
-
-func (p Plugins)Init(config Config, gofra API) error{
+func (p Plugins) Init(config Config, gofra API) error {
 	return p.loadAll(config, gofra)
 }
 
@@ -20,32 +32,41 @@ func NewPlugins(config Config) Plugins {
 
 func getFileNamesInPaths(paths []string) ([]string, error) {
 	files := make([]string, 0)
+
 	for _, path := range paths {
-		file, err := os.Open(path)
+		dir, err := os.Open(path)
+
 		defer func() {
-			err := file.Close()
+			err := dir.Close()
 			if err != nil {
 				log.Print(err)
 			}
 		}()
+
 		if err != nil {
 			log.Printf("failed opening directory: %s", err)
+
 			return nil, err
 		}
-		
-		list, err := file.Readdirnames(0)
+
+		list, err := dir.Readdirnames(0)
 		if err != nil {
 			log.Printf("failed reading plugins: %s", err)
+
 			return nil, err
 		}
+
 		if len(list) == 0 {
 			log.Printf("no plugins found in: %s", path)
+
 			return files, nil
 		}
+
 		for _, name := range list {
-			files = append(files, path + name)
+			files = append(files, path+name)
 		}
 	}
+
 	return files, nil
 }
 
@@ -53,6 +74,7 @@ func isPlugin(fileName string) (Plugin, bool) {
 	if !strings.HasSuffix(fileName, ".so") {
 		return nil, false
 	}
+
 	// load module
 	// 1. open the so file to load the symbols
 	plug, err := plugin.Open(fileName)
@@ -60,6 +82,7 @@ func isPlugin(fileName string) (Plugin, bool) {
 		log.Println(err)
 		return nil, false
 	}
+
 	// 2. look up a symbol (an exported function or variable)
 	// in this case, variable Plugin
 	symPlugin, err := plug.Lookup("Plugin")
@@ -67,6 +90,7 @@ func isPlugin(fileName string) (Plugin, bool) {
 		log.Println(err)
 		return nil, false
 	}
+
 	// 3. Assert that loaded symbol is of a desired type
 	// in this case interface type Plugin (defined above)
 	var botPlugin Plugin
@@ -79,52 +103,55 @@ func isPlugin(fileName string) (Plugin, bool) {
 	return botPlugin, true
 }
 
-func (p Plugins)loadAll(config Config, gofra API) error {
+func (p Plugins) loadAll(config Config, gofra API) error {
 	fileList, err := getFileNamesInPaths(config.PluginPaths)
 	if err != nil {
 		return err
 	}
 
 	for _, plug := range fileList {
-		p.loadPlugin(plug, config, gofra)
+		p.load(plug, config, gofra)
 	}
 	return nil
 }
 
-func (p Plugins) loadPlugin(plug string, config Config, gofra API) bool {
-	gofraPlugin, ok := isPlugin(plug)
+func (p Plugins) load(fileName string, config Config, gofra API) bool {
+	plugin, ok := isPlugin(fileName)
 	if !ok {
-		log.Printf("file %s does not contain a plugin", plug)
+		log.Printf("file %s does not contain a plugin", fileName)
 		return false
 	}
 
-	p[gofraPlugin.Name()] = gofraPlugin
+	p[plugin.Name()] = plugin
 
-	safelyInit(gofraPlugin, config, gofra)
+	InitPlugin(plugin, config, gofra)
 
-	_, ok = gofraPlugin.(Runnable)
+	_, ok = plugin.(Runnable)
 	if ok {
-		go safelyRun(gofraPlugin.Name(), gofraPlugin.(Runnable))
+		go RunPlugin(plugin.Name(), plugin.(Runnable))
 	}
+
 	return true
 }
 
 // Wrapper to prevent a plugin initialization error from bleeding into the bot engine
-func safelyInit(plugin Plugin, config Config, gofra API) {
+func InitPlugin(plugin Plugin, config Config, gofra API) {
 	defer func() {
-        if err := recover(); err != nil {
-            log.Printf("init method of plugin %s failed: %s", plugin.Name(), err)
-        }
-    }()
+		if err := recover(); err != nil {
+			log.Printf("init method of plugin %s failed: %s", plugin.Name(), err)
+		}
+	}()
+
 	plugin.Init(config, gofra)
 }
 
 // Wrapper to prevent a plugin execution error from bleeding into the bot engine
-func safelyRun(pluginName string, plugin Runnable) {
+func RunPlugin(pluginName string, plugin Runnable) {
 	defer func() {
-        if err := recover(); err != nil {
+		if err := recover(); err != nil {
 			log.Printf("Run method of plugin %s failed: %s", pluginName, err)
-        }
-    }()
+		}
+	}()
+
 	plugin.Run()
 }
