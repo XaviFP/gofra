@@ -11,9 +11,11 @@ import (
 	"strings"
 
 	"gofra/gofra"
+	"plugins/command"
 )
 
 type plugin string
+
 const commandStr = "assetinfo"
 const metadataPrefix = "https://api.cryptowat.ch/assets/"
 const metadataSufix = "/metadata"
@@ -37,7 +39,7 @@ func (p plugin) Init(conf gofra.Config, api gofra.API) {
 		"command/assetinfo",
 		p.Name(),
 		handleAssetInfo,
-		gofra.Options{},
+		0,
 	)
 }
 
@@ -46,8 +48,8 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 	asset := defaultAsset
 	argLine := e.Payload["commandBody"].(string)
 	args := strings.Split(argLine, " ")
-	if args[0] != config.Plugins["Commands"]["commandChar"].(string) + commandStr {
-		r = gofra.Reply{Ok: false, Empty: false}
+	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
+		r = gofra.Reply{}
 		r.SetAnswer("Wrong command")
 		return r
 	}
@@ -79,7 +81,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 		r.SetAnswer("Invalid response")
 		return r
 	}
-	
+
 	aux := result["result"]
 	resultMap := aux.(map[string]interface{})
 	payload, ok := resultMap[asset]
@@ -90,7 +92,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 	}
 	payloadMap := payload.(map[string]interface{})
 	description, ok := payloadMap["AssetDescription"]
-	if !ok  {
+	if !ok {
 		r = gofra.Reply{Ok: true, Empty: false}
 		r.SetAnswer("No description for " + asset + " yet")
 		return r
@@ -102,10 +104,13 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 		return r
 	}
 	log.Println(result)
-	
+
 	r = gofra.Reply{Ok: true, Empty: false}
-		r.SetAnswer(descriptionString)
-		return r
+	r.SetAnswer(descriptionString)
+
+	command.YOLO()
+
+	return r
 }
 
 var Plugin plugin

@@ -14,11 +14,11 @@ func TestNewPlugins(t *testing.T) {
 }
 
 func TestLoadAllPlugins(t *testing.T) {
-	config := Config{PluginPaths: []string{test_plugins_path},}
+	config := Config{PluginPaths: []string{test_plugins_path}}
 	var g API
 	plugins := NewPlugins(config)
 	plugins.loadAll(config, g)
-	
+
 	if len(plugins) != 2 {
 		t.Error(`plugins were not loaded correctly`)
 	}
@@ -34,7 +34,7 @@ func TestGetFileNamesInPaths(t *testing.T) {
 	var found bool
 	for _, rname := range referenceNames {
 		for _, fname := range fileNames {
-			if fname == test_plugins_path + rname {
+			if fname == test_plugins_path+rname {
 				found = true
 				break
 			}
@@ -63,14 +63,14 @@ func TestIsPlugin(t *testing.T) {
 }
 
 func TestLoadPlugin(t *testing.T) {
-	config := Config{PluginPaths: []string{test_plugins_path},}
+	config := Config{PluginPaths: []string{test_plugins_path}}
 	var g API
 	plugins := NewPlugins(config)
-	ok := plugins.loadPlugin(test_plugins_path + "not_really.so", config, g)
+	ok := plugins.load(test_plugins_path+"not_really.so", config, g)
 	if ok {
 		t.Error(`not_really shouldn't be a valid plugin`)
 	}
-	ok = plugins.loadPlugin(test_plugins_path + "normie.so", config, g)
+	ok = plugins.load(test_plugins_path+"normie.so", config, g)
 	if !ok {
 		t.Error(`normie should be a valid plugin`)
 	}

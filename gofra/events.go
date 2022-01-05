@@ -6,43 +6,54 @@ import (
 	"sort"
 )
 
-type Events map[string][]EventHandler
-
-func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain ChainHandler, op Options){
-	if e[eventName] == nil {
-		e[eventName] = []EventHandler{}
-	}
-	e[eventName] = append(
-		e[eventName],
-		EventHandler{
-			Handler: handler,
-			Priority: op.Priority,
-			PluginName: pluginName,
-			Chain: chain,
-		},
-	)
-	e.sortByPriority(eventName)
-	event := Event{
-		Name:"addedEventListener",
-		Payload: map[string]interface{}{
-			"event": eventName,
-			"plugin": pluginName,
-			"chained": chain != nil,
-			"priority": op.Priority,
-		},
-	}
-	e.Publish(event)
+type EventManager struct {
+	handlers map[string][]EventHandler
+	logger   Logger
 }
 
-func (e Events) Publish(event Event) Reply{
-	handlers, exist := e[event.Name]
+func NewEventManager(logger Logger) EventManager {
+	return EventManager{
+		handlers: make(map[string][]EventHandler),
+		logger:   logger,
+	}
+}
+
+func (em EventManager) Subscribe(eventName, pluginName string, handler Handler, chain ChainHandler, priority int) {
+	if em.handlers[eventName] == nil {
+		em.handlers[eventName] = []EventHandler{}
+	}
+
+	em.handlers[eventName] = append(
+		em.handlers[eventName],
+		EventHandler{
+			Handler:    handler,
+			Priority:   priority,
+			PluginName: pluginName,
+			Chain:      chain,
+		},
+	)
+
+	em.sort(eventName)
+
+	em.Publish(Event{
+		Name: "addedEventListener",
+		Payload: map[string]interface{}{
+			"event":    eventName,
+			"plugin":   pluginName,
+			"chained":  chain != nil,
+			"priority": priority,
+		},
+	})
+}
+
+func (em EventManager) Publish(event Event) Reply {
 	var reply Reply
 
+	handlers, exist := em.handlers[event.Name]
 	if !exist || len(handlers) == 0 {
-		fmt.Println("No handlers for event: " + event.Name)
-		reply = Reply{Payload: make(map[string]interface{}), Ok: false, Empty: false}
-		reply.SetNoHandlers(true)
-		return reply
+		em.logger.Info(fmt.Sprintf("No handlers for event: %s ", event.Name))
+
+		return Reply{}
 	}
 
 	answered := false
@@ -52,7 +63,7 @@ func (e Events) Publish(event Event) Reply{
 		if handler.Chain != nil {
 			chainedHandlers = append(chainedHandlers, handler)
 		} else {
-			r := runHandlerSafely(handler,event)
+			r := runHandler(handler, event)
 			if !answered && !r.Empty {
 				reply = r
 				answered = true
@@ -61,52 +72,31 @@ func (e Events) Publish(event Event) Reply{
 		}
 	}
 
+	reply.EventHandled = true
+
 	if len(chainedHandlers) == 0 {
 		return reply
 	}
 
 	for _, handler := range chainedHandlers {
-		runChainHandlerSafely(handler, &event)
+		runChainHandler(handler, &event)
 	}
+
 	return reply
 }
 
-func runHandlerSafely(h EventHandler, e Event) Reply {
-	defer func() {
-        if err := recover(); err != nil {
-            log.Printf("plugin '%s' handler for event '%s' failed: %s", h.PluginName, e.Name, err)
-        }
-    }()
+func (em EventManager) SetPriority(eventName, pluginName string, priority int) error {
+	var priorityChanged, pluginFound bool
 
-	return h.Handler(e)
-}
-
-func runChainHandlerSafely(h EventHandler, e *Event) {
-	defer func() {
-        if err := recover(); err != nil {
-            log.Printf("plugin '%s' chain handler for event '%s' failed: %s", h.PluginName, e.Name, err)
-        }
-    }()
-
-	h.Chain(e)
-}
-
-func NewEvents(config Config) Events {
-	return make(Events)
-}
-
-func (e Events) SetPriority(eventName, pluginName string, options Options) error{
-	var priorityChanged bool
-	var pluginFound bool
-	_, exist := e[eventName]
+	_, exist := em.handlers[eventName]
 	if !exist {
 		return fmt.Errorf("event %s not found", eventName)
 	}
-	for i, element := range e[eventName] {
+	for i, element := range em.handlers[eventName] {
 		if element.PluginName == pluginName {
 			pluginFound = true
-			if element.Priority != options.Priority {
-				e[eventName][i].Priority = options.Priority
+			if element.Priority != priority {
+				em.handlers[eventName][i].Priority = priority
 				priorityChanged = true
 			}
 			break
@@ -119,13 +109,106 @@ func (e Events) SetPriority(eventName, pluginName string, options Options) error
 		// If a given handler for a plugin had the same priority before, then do nothing
 		return nil
 	}
-	e.sortByPriority(eventName)
+
+	em.sort(eventName)
+
 	return nil
 }
 
-// Sorts handlers in descending priority order
-func (e Events)sortByPriority(eventName string){
-	sort.Slice(e[eventName], func(i, j int) bool {
-		return e[eventName][i].Priority > e[eventName][j].Priority
+// sort sorts handlers in descending priority order
+func (em EventManager) sort(eventName string) {
+	sort.Slice(em.handlers[eventName], func(i, j int) bool {
+		return em.handlers[eventName][i].Priority > em.handlers[eventName][j].Priority
 	})
+}
+
+type Handler func(event Event) Reply
+type ChainHandler func(accumulated *Event)
+
+type EventHandler struct {
+	Handler    Handler
+	Priority   int
+	PluginName string
+	Chain      ChainHandler
+}
+
+type Event struct {
+	Name    string
+	MB      MessageBody
+	Payload map[string]interface{}
+}
+
+func (e *Event) SetStanza(stanza interface{}) {
+	if e.Payload == nil {
+		e.Payload = make(map[string]interface{})
+	}
+	e.Payload["stanza"] = stanza
+}
+
+func (e *Event) GetStanza() interface{} {
+	if e.Payload == nil {
+		e.Payload = make(map[string]interface{})
+	}
+	stanza, exists := e.Payload["stanza"]
+	if !exists {
+		return nil
+	}
+	return stanza
+}
+
+type Reply struct {
+	Payload      map[string]interface{}
+	Ok           bool
+	Empty        bool
+	EventHandled bool
+}
+
+// Example
+// type BetweenPlugins struc{
+// 	isEventHandledBySomone bool
+// 	answer strign
+// }
+
+// Data access interface for text-based commands to answer to a suitable message.
+func (r *Reply) SetAnswer(answer string) {
+	if r.Payload == nil {
+		r.Payload = make(map[string]interface{})
+	}
+	r.Payload["answer"] = answer
+}
+
+// Data access interface for command plugin to receive the answer from an specific command.
+func (r *Reply) GetAnswer() string {
+	if r.Payload == nil {
+		r.Payload = make(map[string]interface{})
+	}
+	answer, exists := r.Payload["answer"]
+	if !exists {
+		return ""
+	}
+	strAnswer, ok := answer.(string)
+	if !ok {
+		return ""
+	}
+	return strAnswer
+}
+
+func runHandler(h EventHandler, e Event) Reply {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("plugin '%s' handler for event '%s' failed: %s", h.PluginName, e.Name, err)
+		}
+	}()
+
+	return h.Handler(e)
+}
+
+func runChainHandler(h EventHandler, e *Event) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Printf("plugin '%s' chain handler for event '%s' failed: %s", h.PluginName, e.Name, err)
+		}
+	}()
+
+	h.Chain(e)
 }
