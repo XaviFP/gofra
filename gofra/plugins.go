@@ -11,7 +11,7 @@ import (
 type Plugin interface {
 	Name() string
 	Description() string
-	Init(Config, API)
+	Init(Config, Gofra)
 }
 
 // Interface to be satisfied by plugins that need an execution loop

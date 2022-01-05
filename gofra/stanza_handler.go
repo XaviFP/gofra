@@ -14,6 +14,14 @@ type MessageBody struct {
 	Body string `xml:"body"`
 }
 
+func (mb MessageBody) Reply(body string) MessageBody {
+	reply := mb
+	reply.Body = body
+	reply.To, reply.From = mb.From, mb.To
+
+	return reply
+}
+
 type stanzaHandler struct {
 	logger  Logger
 	publish func(e Event)

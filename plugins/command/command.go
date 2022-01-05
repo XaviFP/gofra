@@ -10,8 +10,6 @@ import (
 	"log"
 	"os"
 	"strings"
-
-	"mellium.im/xmpp/stanza"
 )
 
 type plugin string
@@ -71,22 +69,22 @@ func handleMessage(e gofra.Event) gofra.Reply {
 	}
 
 	command = strings.Split(msg.Body, " ")[0][1:]
-	msgType := msg.Type
-	to := msg.From
+	// msgType := msg.Type
+	// to := msg.From
 
 	eventName := "command/" + command
-	e.Payload["commandBody"] = msg.Body
-	event := gofra.Event{eventName, e.Payload}
+
+	event := gofra.Event{eventName, msg, e.Payload}
 	reply := g.Publish(event)
 
-	if !reply.Empty && reply.GetAnswer() != "" {
-		r := gofra.MessageBody{Message: stanza.Message{Type: msgType, To: to.Bare()}, Body: reply.GetAnswer()}
-		err := g.Client.Encode(g.Context, r)
+	// if !reply.Empty && reply.GetAnswer() != "" {
+	// 	r := gofra.MessageBody{Message: stanza.Message{Type: msgType, To: to.Bare()}, Body: reply.GetAnswer()}
+	// 	err := g.Client.Encode(g.Context, r)
 
-		if err != nil {
-			g.Logger.Println("Error encoding message in command Plugin: ", err)
-		}
-	}
+	// 	if err != nil {
+	// 		g.Logger.Println("Error encoding message in command Plugin: ", err)
+	// 	}
+	// }
 	return reply
 }
 

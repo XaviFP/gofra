@@ -2,64 +2,51 @@ package gofra
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestEvents_NewEvents(t *testing.T) {
-	events := NewEvents(Config{})
-	if len(events) != 0 {
-		t.Error(`NewEvents returns a non empty Events object`)
-	}
-}
-
-var ran bool
-
-func setRan(b bool) {
-	ran = b
-}
 func TestEvents_PublishSubscribeEvent(t *testing.T) {
-	events := NewEvents(Config{})
+	em := NewEventManager(Logger{})
+	var ran bool
 
-	events.Subscribe(
+	em.Subscribe(
 		"addedEventListener",
 		"testPlugin",
 		func(e Event) Reply {
-			setRan(true)
+			ran = true
 			return Reply{}
 		},
 		nil,
 		0,
 	)
-	if !ran {
-		t.Error(`Event subscribed didn't run`)
-	}
+
+	assert.True(t, ran)
 }
 
 func exampleHandler(e Event) Reply {
 	return Reply{}
 }
 func TestEvents_Setpriority(t *testing.T) {
-	events := NewEvents(Config{})
+	em := NewEventManager(Logger{})
 
-	events.Subscribe(
+	em.Subscribe(
 		"addedEventListener",
 		"testPlugin1",
 		exampleHandler,
 		nil,
 		1,
 	)
-	events.Subscribe(
+	em.Subscribe(
 		"addedEventListener",
 		"testPlugin2",
 		exampleHandler,
 		nil,
 		2,
 	)
-	if events["addedEventListener"][0].PluginName != "testPlugin2" {
-		t.Error(`Event handlers are no sorted correctly`)
-	}
-	events.SetPriority("addedEventListener", "testPlugin1", 3)
 
-	if events["addedEventListener"][0].PluginName != "testPlugin1" {
-		t.Error(`SetPriority does not sort correctly`)
-	}
+	assert.Equal(t, "testPlugin2", em.handlers["addedEventListener"][0].PluginName)
+
+	em.SetPriority("addedEventListener", "testPlugin1", 3)
+	assert.Equal(t, "testPlugin1", em.handlers["addedEventListener"][0].PluginName)
 }

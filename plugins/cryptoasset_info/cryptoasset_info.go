@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"gofra/gofra"
+	"plugins/command"
 )
 
 type plugin string
@@ -106,6 +107,9 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 
 	r = gofra.Reply{Ok: true, Empty: false}
 	r.SetAnswer(descriptionString)
+
+	command.YOLO()
+
 	return r
 }
 

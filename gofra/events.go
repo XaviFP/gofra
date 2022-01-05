@@ -134,6 +134,7 @@ type EventHandler struct {
 
 type Event struct {
 	Name    string
+	MB      MessageBody
 	Payload map[string]interface{}
 }
 
