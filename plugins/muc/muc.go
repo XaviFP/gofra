@@ -12,7 +12,7 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
-type plugin string
+type plugin string // TODO check what is the best type for this case
 
 var g *gofra.Gofra
 var config gofra.Config

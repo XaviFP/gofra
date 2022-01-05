@@ -7,8 +7,7 @@ package main
 import (
 	"context"
 	"flag"
-
-	/* "fmt" */
+	"fmt"
 
 	"io/ioutil"
 	"log"
@@ -59,18 +58,19 @@ func main() {
 
 	g = gofra.NewGofra(ctx, config)
 	defer func() {
-		g.Logger.Info.Println("Closing conn…")
+		g.Logger.Info("Closing conn…")
 		if err := g.Client.Conn().Close(); err != nil {
-			g.Logger.Error.Printf("Error closing connection: %q", err)
+			g.Logger.Error(fmt.Sprintf("Error closing connection: %q", err))
 		}
 	}()
 
 	go func() {
 		select {
 		case <-ctx.Done():
-			g.Logger.Info.Println("Closing session…")
+			g.Logger.Info("Closing session…")
+
 			if err := g.Client.Close(); err != nil {
-				g.Logger.Error.Printf("Error closing session: %q", err)
+				g.Logger.Error(fmt.Sprintf("Error closing session: %q", err))
 			}
 		}
 	}()

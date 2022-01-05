@@ -6,28 +6,62 @@ import (
 	"os"
 )
 
+type LogLevel int
+
+const (
+	LogLevelError LogLevel = iota
+	LogLevelWarn
+	LogLevelDebug
+	LogLevelInfo
+)
+
 type Logger struct {
-	Info  *log.Logger
-	Debug *log.Logger
-	Warn  *log.Logger
-	Error *log.Logger
+	info  *log.Logger
+	debug *log.Logger
+	warn  *log.Logger
+	err   *log.Logger
+
+	logLevel LogLevel
 }
 
 func NewLogger(debug bool) Logger {
 	flags := log.Ldate | log.Ltime | log.Llongfile
 	logger := Logger{
-		Info:  log.New(os.Stdout, "INFO ", flags),
-		Debug: log.New(io.Discard, "DEBUG ", flags),
-		Warn:  log.New(os.Stderr, "WARN ", flags),
-		Error: log.New(os.Stderr, "ERROR ", flags),
+		info:  log.New(os.Stdout, "INFO ", flags),
+		debug: log.New(io.Discard, "DEBUG ", flags),
+		warn:  log.New(os.Stderr, "WARN ", flags),
+		err:   log.New(os.Stderr, "ERROR ", flags),
 	}
 
 	if debug {
-		logger.Debug.SetOutput(os.Stderr)
+		logger.debug.SetOutput(os.Stderr)
 	}
 
 	return logger
+}
 
+func (l Logger) Info(message string) {
+	if l.logLevel >= LogLevelInfo {
+		l.info.Println(message)
+	}
+}
+
+func (l Logger) Debug(message string) {
+	if l.logLevel >= LogLevelDebug {
+		l.debug.Println(message)
+	}
+}
+
+func (l Logger) Warn(message string) {
+	if l.logLevel >= LogLevelWarn {
+		l.warn.Println(message)
+	}
+}
+
+func (l Logger) Error(message string) {
+	if l.logLevel >= LogLevelError {
+		l.err.Println(message)
+	}
 }
 
 type xmlWriter struct {
@@ -35,8 +69,6 @@ type xmlWriter struct {
 }
 
 func (xw xmlWriter) Write(p []byte) (int, error) {
-	// TODO: this Write method should write to gofra's logger
-	// and make use of Info log level
 	xw.logger.Printf("%s", p)
 
 	return len(p), nil

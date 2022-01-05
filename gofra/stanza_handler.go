@@ -2,6 +2,7 @@ package gofra
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io"
 
 	"mellium.im/xmlstream"
@@ -19,26 +20,28 @@ type stanzaHandler struct {
 }
 
 func (h stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEncoder) error {
-	h.logger.Debug.Printf("Message received: %v", msg)
+	h.logger.Debug(fmt.Sprintf("Message received: %v", msg))
 
 	d := xml.NewTokenDecoder(t)
 	msgStruct := MessageBody{}
 	err := d.Decode(&msgStruct)
 
 	if err != nil && err != io.EOF {
-		h.logger.Error.Printf("Error decoding message: %q", err)
+		h.logger.Error(fmt.Sprintf("Error decoding message: %q", err))
 		return nil
 	}
 
 	if msgStruct.Body == "" || msgStruct.Type != stanza.ChatMessage {
-		h.logger.Debug.Printf("Message received has no body")
+		h.logger.Debug("Message received has no body")
 	}
 
-	h.logger.Debug.Printf("Message received: %v, with body: %q", msgStruct, msgStruct.Body)
+	h.logger.Debug(fmt.Sprintf("Message received: %v, with body: %q", msgStruct, msgStruct.Body))
+
 	e := Event{
 		Name:    "messageReceived",
 		Payload: make(map[string]interface{}),
 	}
+
 	e.SetStanza(msgStruct)
 
 	defer func() {
@@ -49,7 +52,8 @@ func (h stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEn
 }
 
 // Prevent same presence to be handled more than once.
-// Using an empty xml.Name in the handler registration creates a wildcard that makes the handler run for every inner element in the stanza
+// Using an empty xml.Name in the handler registration creates a wildcard
+// making the handler run for every inner element in the stanza
 var lastP stanza.Presence
 
 func isLastPresence(p stanza.Presence) bool {
@@ -66,13 +70,13 @@ func (h stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEn
 	}
 
 	lastP = p
-	h.logger.Debug.Printf("Presence received: %v", p)
+	h.logger.Debug(fmt.Sprintf("Presence received: %v", p))
 
 	e := Event{
 		Name:    "presenceReceived",
 		Payload: make(map[string]interface{}),
 	}
-	//TODO use presence extended fields struct as decode receiver like MessageBody{}
+
 	e.SetStanza(p)
 
 	defer func() {
@@ -82,14 +86,14 @@ func (h stanzaHandler) HandlePresence(p stanza.Presence, t xmlstream.TokenReadEn
 	return nil
 }
 
-//TODO add proper IQ handling
 func (h stanzaHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	h.logger.Debug.Printf("Presence received: %v", iq)
+	h.logger.Debug(fmt.Sprintf("IQ received: %v", iq))
 
 	e := Event{
 		Name:    "iqReceived",
 		Payload: make(map[string]interface{}),
 	}
+
 	e.SetStanza(iq)
 
 	defer func() {

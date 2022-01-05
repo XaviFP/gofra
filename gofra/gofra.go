@@ -23,20 +23,20 @@ type API interface {
 	Subscribe(eventName, pluginName string, handler Handler, priority int)
 	SubscribeChain(eventName, pluginName string, handler ChainHandler, priority int)
 	Publish(event Event) Reply
-	SetPriority(eventName, pluginName string) error
+	SetPriority(eventName, pluginName string, priority int) error
 	SendStanza(stanza interface{}) error
 	// Add AddMuxOption and AddMuxOptions if required
 }
 type Gofra struct {
-	config      Config
-	events      Events
-	plugins     Plugins
-	Client      *xmpp.Session
-	Context     context.Context
-	Logger      Logger
-	mux         *mux.ServeMux // TODO: Rename to ServeMux
-	opts        []mux.Option  // TODO: muxOpts or more specific name (currently it looks like Gofra opts, not ServeMux opts)
-	initialized bool
+	config       Config
+	em           EventManager
+	plugins      Plugins
+	Client       *xmpp.Session
+	Context      context.Context
+	Logger       Logger
+	serveMux     *mux.ServeMux
+	serveMuxOpts []mux.Option
+	initialized  bool
 }
 
 func NewGofra(ctx context.Context, config Config) *Gofra {
@@ -50,34 +50,31 @@ func NewGofra(ctx context.Context, config Config) *Gofra {
 
 	gofra := &Gofra{
 		config:  config,
-		events:  NewEvents(config),
+		em:      NewEventManager(logger),
 		plugins: NewPlugins(config),
 		Client:  c,
 		Context: ctx,
 		Logger:  logger,
-		// opts:    opts, // TODO check if this is possible to avoid the AddMuxOptions
 	}
 
-	publish := func(e Event) {
-		gofra.Publish(e)
+	stanzaHandler := stanzaHandler{
+		logger: logger,
+		publish: func(e Event) {
+			gofra.Publish(e)
+		},
 	}
 
-	stanzaHandler := stanzaHandler{logger: logger, publish: publish}
-
-	opts := []mux.Option{
+	gofra.serveMuxOpts = []mux.Option{
 		mux.Presence(stanza.AvailablePresence, xml.Name{}, stanzaHandler),
 		mux.Presence(stanza.UnavailablePresence, xml.Name{}, stanzaHandler),
 		mux.Message(stanza.ChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler),
 		mux.Message(stanza.GroupChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler),
 	}
 
-	gofra.AddMuxOptions(opts)
-
 	return gofra
 }
 
-///////////////////// API ///////////////////////
-
+// TODO modify comment
 // Send function wrapper to make sending messages easier
 func (g *Gofra) SendMessage(to, body string, msgType stanza.MessageType) error {
 	j, err := jid.Parse(to)
@@ -101,34 +98,32 @@ are executed after all non-accumulative ones by descending priority order. Accum
 event values are received through the event pointer argument where changes are expecteted
 to be performed in order for the following chained handlers to recieve them. */
 func (g *Gofra) Subscribe(eventName, pluginName string, handler Handler, priority int) {
-	g.Logger.Info.Println("Plugin " + pluginName + " subscribed handler to event " + eventName)
-	g.events.Subscribe(eventName, pluginName, handler, nil, priority)
+	g.Logger.Info("Plugin " + pluginName + " subscribed handler to event " + eventName)
+	g.em.Subscribe(eventName, pluginName, handler, nil, priority)
 }
 
 // TODO change naming and method comments between Subscribe and SubscribeChain
 func (g *Gofra) SubscribeChain(eventName, pluginName string, handler ChainHandler, priority int) {
-	g.Logger.Info.Println("Plugin " + pluginName + " subscribed chained handler to event " + eventName)
-	g.events.Subscribe(eventName, pluginName, nil, handler, priority)
+	g.Logger.Info("Plugin " + pluginName + " subscribed chained handler to event " + eventName)
+	g.em.Subscribe(eventName, pluginName, nil, handler, priority)
 }
 
-// Executes all event handlers subscribed to a particular event
+// Publish executes all event handlers subscribed to a particular event
 func (g *Gofra) Publish(event Event) Reply {
-	return g.events.Publish(event)
+	return g.em.Publish(event)
 }
 
-func (g *Gofra) SetPriority(eventName, pluginName string) error {
-	return g.events.SetPriority(eventName, pluginName)
+func (g *Gofra) SetPriority(eventName, pluginName string, priority int) error {
+	return g.em.SetPriority(eventName, pluginName, priority)
 }
 
 func (g *Gofra) AddMuxOption(o mux.Option) {
-	g.opts = append(g.opts, o)
+	g.serveMuxOpts = append(g.serveMuxOpts, o)
 }
 
 func (g *Gofra) AddMuxOptions(opts []mux.Option) {
-	g.opts = append(g.opts, opts...)
+	g.serveMuxOpts = append(g.serveMuxOpts, opts...)
 }
-
-/////////////////////////////////////////////////
 
 func (g *Gofra) Init() error {
 	if g.initialized {
@@ -144,7 +139,7 @@ func (g *Gofra) Init() error {
 	}
 
 	// Initialize stanza multiplexer after registering all plugin-specific routes
-	g.mux = mux.New("jabber:client", g.opts...)
+	g.serveMux = mux.New("jabber:client", g.serveMuxOpts...)
 
 	g.Publish(Event{Name: "initialized"})
 
@@ -160,7 +155,7 @@ func (g *Gofra) Connect() error {
 
 	g.Publish(Event{Name: "connected"})
 
-	return g.Client.Serve(xmpp.HandlerFunc(g.mux.HandleXMPP))
+	return g.Client.Serve(xmpp.HandlerFunc(g.serveMux.HandleXMPP))
 }
 
 func newXmppClient(ctx context.Context, config Config, xmlIn, xmlOut io.Writer, logger Logger) (*xmpp.Session, error) {

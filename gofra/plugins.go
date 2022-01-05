@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Interface to be satisfied by any gofra plugin
+// Interface to be satisfied by any Gofra plugin
 type Plugin interface {
 	Name() string
 	Description() string
@@ -75,9 +75,10 @@ func isPlugin(fileName string) (Plugin, bool) {
 		return nil, false
 	}
 
+	// TODO Change the following comments
 	// load module
 	// 1. open the so file to load the symbols
-	plug, err := plugin.Open(fileName)
+	goPlugin, err := plugin.Open(fileName)
 	if err != nil {
 		log.Println(err)
 		return nil, false
@@ -85,7 +86,7 @@ func isPlugin(fileName string) (Plugin, bool) {
 
 	// 2. look up a symbol (an exported function or variable)
 	// in this case, variable Plugin
-	symPlugin, err := plug.Lookup("Plugin")
+	symPlugin, err := goPlugin.Lookup("Plugin")
 	if err != nil {
 		log.Println(err)
 		return nil, false
@@ -93,14 +94,13 @@ func isPlugin(fileName string) (Plugin, bool) {
 
 	// 3. Assert that loaded symbol is of a desired type
 	// in this case interface type Plugin (defined above)
-	var botPlugin Plugin
-	botPlugin, ok := symPlugin.(Plugin)
+	p, ok := symPlugin.(Plugin)
 	if !ok {
 		log.Printf("unexpected type from module symbol in file %s", fileName)
 		return nil, false
 	}
 
-	return botPlugin, true
+	return p, true
 }
 
 func (p Plugins) loadAll(config Config, gofra API) error {
@@ -109,8 +109,8 @@ func (p Plugins) loadAll(config Config, gofra API) error {
 		return err
 	}
 
-	for _, plug := range fileList {
-		p.load(plug, config, gofra)
+	for _, f := range fileList {
+		p.load(f, config, gofra)
 	}
 	return nil
 }
@@ -134,6 +134,7 @@ func (p Plugins) load(fileName string, config Config, gofra API) bool {
 	return true
 }
 
+// Improve comment
 // Wrapper to prevent a plugin initialization error from bleeding into the bot engine
 func InitPlugin(plugin Plugin, config Config, gofra API) {
 	defer func() {
@@ -145,6 +146,7 @@ func InitPlugin(plugin Plugin, config Config, gofra API) {
 	plugin.Init(config, gofra)
 }
 
+// Improve comment
 // Wrapper to prevent a plugin execution error from bleeding into the bot engine
 func RunPlugin(pluginName string, plugin Runnable) {
 	defer func() {

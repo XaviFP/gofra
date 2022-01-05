@@ -6,20 +6,25 @@ import (
 	"sort"
 )
 
-// TODO try to rename Events, EventHandler, Hanlder, ChainHandler, etc..
-type Events map[string][]EventHandler
-
-func NewEvents(config Config) Events {
-	return make(Events)
+type EventManager struct {
+	handlers map[string][]EventHandler
+	logger   Logger
 }
 
-func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain ChainHandler, priority int) {
-	if e[eventName] == nil {
-		e[eventName] = []EventHandler{}
+func NewEventManager(logger Logger) EventManager {
+	return EventManager{
+		handlers: make(map[string][]EventHandler),
+		logger:   logger,
+	}
+}
+
+func (em EventManager) Subscribe(eventName, pluginName string, handler Handler, chain ChainHandler, priority int) {
+	if em.handlers[eventName] == nil {
+		em.handlers[eventName] = []EventHandler{}
 	}
 
-	e[eventName] = append(
-		e[eventName],
+	em.handlers[eventName] = append(
+		em.handlers[eventName],
 		EventHandler{
 			Handler:    handler,
 			Priority:   priority,
@@ -28,9 +33,9 @@ func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain C
 		},
 	)
 
-	e.sortByPriority(eventName)
+	em.sort(eventName)
 
-	event := Event{
+	em.Publish(Event{
 		Name: "addedEventListener",
 		Payload: map[string]interface{}{
 			"event":    eventName,
@@ -38,17 +43,16 @@ func (e Events) Subscribe(eventName, pluginName string, handler Handler, chain C
 			"chained":  chain != nil,
 			"priority": priority,
 		},
-	}
-
-	e.Publish(event)
+	})
 }
 
-func (e Events) Publish(event Event) Reply {
+func (em EventManager) Publish(event Event) Reply {
 	var reply Reply
 
-	handlers, exist := e[event.Name]
+	handlers, exist := em.handlers[event.Name]
 	if !exist || len(handlers) == 0 {
-		fmt.Println("No handlers for event: " + event.Name) // TODO use logger (modify Events type with logger as attribute and pass it down from gofra through NewEvents)
+		em.logger.Info(fmt.Sprintf("No handlers for event: %s ", event.Name))
+
 		return Reply{}
 	}
 
@@ -59,7 +63,7 @@ func (e Events) Publish(event Event) Reply {
 		if handler.Chain != nil {
 			chainedHandlers = append(chainedHandlers, handler)
 		} else {
-			r := runHandlerSafely(handler, event)
+			r := runHandler(handler, event)
 			if !answered && !r.Empty {
 				reply = r
 				answered = true
@@ -75,24 +79,24 @@ func (e Events) Publish(event Event) Reply {
 	}
 
 	for _, handler := range chainedHandlers {
-		runChainHandlerSafely(handler, &event)
+		runChainHandler(handler, &event)
 	}
 
 	return reply
 }
 
-func (e Events) SetPriority(eventName, pluginName string) error {
-	var priorityChanged bool
-	var pluginFound bool
-	_, exist := e[eventName]
+func (em EventManager) SetPriority(eventName, pluginName string, priority int) error {
+	var priorityChanged, pluginFound bool
+
+	_, exist := em.handlers[eventName]
 	if !exist {
 		return fmt.Errorf("event %s not found", eventName)
 	}
-	for i, element := range e[eventName] {
+	for i, element := range em.handlers[eventName] {
 		if element.PluginName == pluginName {
 			pluginFound = true
-			if element.Priority != options.Priority {
-				e[eventName][i].Priority = options.Priority
+			if element.Priority != priority {
+				em.handlers[eventName][i].Priority = priority
 				priorityChanged = true
 			}
 			break
@@ -105,14 +109,16 @@ func (e Events) SetPriority(eventName, pluginName string) error {
 		// If a given handler for a plugin had the same priority before, then do nothing
 		return nil
 	}
-	e.sortByPriority(eventName)
+
+	em.sort(eventName)
+
 	return nil
 }
 
-// Sorts handlers in descending priority order
-func (e Events) sortByPriority(eventName string) {
-	sort.Slice(e[eventName], func(i, j int) bool {
-		return e[eventName][i].Priority > e[eventName][j].Priority
+// sort sorts handlers in descending priority order
+func (em EventManager) sort(eventName string) {
+	sort.Slice(em.handlers[eventName], func(i, j int) bool {
+		return em.handlers[eventName][i].Priority > em.handlers[eventName][j].Priority
 	})
 }
 
@@ -186,8 +192,7 @@ func (r *Reply) GetAnswer() string {
 	return strAnswer
 }
 
-// TODO rename without safely
-func runHandlerSafely(h EventHandler, e Event) Reply {
+func runHandler(h EventHandler, e Event) Reply {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("plugin '%s' handler for event '%s' failed: %s", h.PluginName, e.Name, err)
@@ -197,7 +202,7 @@ func runHandlerSafely(h EventHandler, e Event) Reply {
 	return h.Handler(e)
 }
 
-func runChainHandlerSafely(h EventHandler, e *Event) {
+func runChainHandler(h EventHandler, e *Event) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("plugin '%s' chain handler for event '%s' failed: %s", h.PluginName, e.Name, err)
