@@ -5,6 +5,7 @@ muc is a gofra plugin that allows joining muti-user chatrooms and keeps track of
 package main
 
 import (
+	"fmt"
 	"gofra/gofra"
 
 	"mellium.im/xmpp/jid"
@@ -28,8 +29,8 @@ func (p plugin) Description() string {
 	return "Handles multi user chat rooms"
 }
 
-func (p plugin) Init(conf gofra.Config, api gofra.API) {
-	g = api.(*gofra.Gofra)
+func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {
+	g = gofra
 	config = conf
 	prepareMUCs()
 	g.Subscribe(
@@ -49,7 +50,8 @@ func (p plugin) Init(conf gofra.Config, api gofra.API) {
 
 func prepareMUCs() {
 	if len(config.MUCs) == 0 {
-		g.Logger.Error.Printf("No MUCs in config: %v", config)
+		g.Logger.Error(fmt.Sprintf("No MUCs in config: %v", config))
+
 		return
 	}
 
@@ -61,7 +63,8 @@ func prepareMUCs() {
 func handlePresence(e gofra.Event) gofra.Reply {
 	pres, ok := e.GetStanza().(stanza.Presence)
 	if !ok {
-		g.Logger.Debug.Println("Ignoring packet: %T\n", pres)
+		g.Logger.Debug(fmt.Sprintf("Ignoring packet: %T\n", pres))
+
 		return gofra.Reply{Empty: true}
 	}
 
@@ -75,11 +78,13 @@ func handlePresence(e gofra.Event) gofra.Reply {
 	_, exists := occupants[mucJid]
 
 	if !exists {
-		g.Logger.Error.Println("MUC " + mucJid + " not found in config")
+		g.Logger.Error("MUC " + mucJid + " not found in config")
+
 		return gofra.Reply{Ok: false, Empty: true}
 	}
 
 	if occupantNick == "" {
+
 		return gofra.Reply{Ok: true, Empty: true}
 	}
 
@@ -93,6 +98,7 @@ func handlePresence(e gofra.Event) gofra.Reply {
 	}
 
 	if !occupantJoined(mucJid, occupantNick) {
+
 		return gofra.Reply{Ok: true, Empty: true}
 	}
 
@@ -101,12 +107,14 @@ func handlePresence(e gofra.Event) gofra.Reply {
 			//TODO send muc and occupant in the event
 			Name: "muc/occupantJoinedMuc",
 		})
+
 	return gofra.Reply{Ok: true, Empty: true}
 }
 
 func occupantLeft(room, occupant string) {
 	position, exists := isOccupant(room, occupant)
 	if !exists {
+
 		return
 	}
 	occupants[room][position] = occupants[room][len(room)-1]
@@ -116,10 +124,11 @@ func occupantLeft(room, occupant string) {
 func occupantJoined(room, occupant string) bool {
 	_, exists := isOccupant(room, occupant)
 	if exists {
+
 		return false
 	}
 	occupants[room] = append(occupants[room], occupant)
-	g.Logger.Println(occupants)
+
 	return true
 }
 
@@ -131,26 +140,31 @@ func isOccupant(room, occupant string) (int, bool) {
 			break
 		}
 	}
+
 	return position, position != -1
 }
 
 func joinMUCs(e gofra.Event) gofra.Reply {
-	if len(config.Mucs) == 0 {
+	if len(config.MUCs) == 0 {
+
 		return gofra.Reply{Empty: true}
 	}
-	for _, muc := range config.Mucs {
+	for _, muc := range config.MUCs {
 		joinMUC(muc)
 	}
+
 	return gofra.Reply{Empty: true}
 }
 
-func joinMUC(mc gofra.MucConfig) {
-	g.Logger.Println("Tried to join room: " + mc.Jid)
+func joinMUC(mc gofra.MUCConfig) {
+	g.Logger.Debug("Tried to join room: " + mc.Jid)
 	j := jid.MustParse(mc.Jid + "/" + mc.Nick)
 	_, exists := mucs[mc.Jid]
 	if exists {
+
 		return
 	}
+
 	mucOpts := []muc.Option{}
 
 	if mc.Nick != "" {
@@ -169,7 +183,7 @@ func joinMUC(mc gofra.MucConfig) {
 		_, err := client.Join(g.Context, jid.MustParse(mc.Jid+"/"+mc.Nick), g.Client, mucOpts...)
 
 		if err != nil {
-			g.Logger.Fatalf("error joining: %v", err)
+			g.Logger.Error(fmt.Sprintf("error joining: %v", err))
 		}
 
 		e := gofra.Event{Name: "muc/joinedRoom", Payload: map[string]interface{}{"roomJid": mc.Jid}}

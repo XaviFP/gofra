@@ -28,14 +28,14 @@ func (p plugin) Description() string {
 	return "Makes it easy to create text-based plugin commands"
 }
 
-func (p plugin) Init(config gofra.Config, api gofra.API) {
+func (p plugin) Init(config gofra.Config, gofra *gofra.Gofra) {
 	c = config
-	g, _ = api.(*gofra.Gofra)
+	g = gofra
 	g.Subscribe(
 		"messageReceived",
 		p.Name(),
 		handleMessage,
-		gofra.Options{Priority: 9999},
+		9999,
 	)
 	checkConfig(c)
 }
@@ -74,7 +74,7 @@ func handleMessage(e gofra.Event) gofra.Reply {
 
 	eventName := "command/" + command
 
-	event := gofra.Event{eventName, msg, e.Payload}
+	event := gofra.Event{Name: eventName, MB: msg, Payload: e.Payload}
 	reply := g.Publish(event)
 
 	// if !reply.Empty && reply.GetAnswer() != "" {

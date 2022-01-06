@@ -11,7 +11,7 @@ import (
 type Plugin interface {
 	Name() string
 	Description() string
-	Init(Config, Gofra)
+	Init(Config, *Gofra)
 }
 
 // Interface to be satisfied by plugins that need an execution loop
@@ -22,7 +22,7 @@ type Runnable interface {
 
 type Plugins map[string]Plugin
 
-func (p Plugins) Init(config Config, gofra API) error {
+func (p Plugins) Init(config Config, gofra *Gofra) error {
 	return p.loadAll(config, gofra)
 }
 
@@ -103,7 +103,7 @@ func isPlugin(fileName string) (Plugin, bool) {
 	return p, true
 }
 
-func (p Plugins) loadAll(config Config, gofra API) error {
+func (p Plugins) loadAll(config Config, gofra *Gofra) error {
 	fileList, err := getFileNamesInPaths(config.PluginPaths)
 	if err != nil {
 		return err
@@ -115,7 +115,7 @@ func (p Plugins) loadAll(config Config, gofra API) error {
 	return nil
 }
 
-func (p Plugins) load(fileName string, config Config, gofra API) bool {
+func (p Plugins) load(fileName string, config Config, gofra *Gofra) bool {
 	plugin, ok := isPlugin(fileName)
 	if !ok {
 		log.Printf("file %s does not contain a plugin", fileName)
@@ -136,7 +136,7 @@ func (p Plugins) load(fileName string, config Config, gofra API) bool {
 
 // Improve comment
 // Wrapper to prevent a plugin initialization error from bleeding into the bot engine
-func InitPlugin(plugin Plugin, config Config, gofra API) {
+func InitPlugin(plugin Plugin, config Config, gofra *Gofra) {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("init method of plugin %s failed: %s", plugin.Name(), err)

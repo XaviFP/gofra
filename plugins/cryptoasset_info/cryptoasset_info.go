@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"gofra/gofra"
-	"plugins/command"
 )
 
 type plugin string
@@ -21,7 +20,7 @@ const metadataPrefix = "https://api.cryptowat.ch/assets/"
 const metadataSufix = "/metadata"
 const defaultAsset = "btc"
 
-var g gofra.API
+var g *gofra.Gofra
 var config gofra.Config
 
 func (p plugin) Name() string {
@@ -32,8 +31,8 @@ func (p plugin) Description() string {
 	return "Provides a brief description of crypto assets"
 }
 
-func (p plugin) Init(conf gofra.Config, api gofra.API) {
-	g = api
+func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {
+	g = gofra
 	config = conf
 	g.Subscribe(
 		"command/assetinfo",
@@ -44,14 +43,15 @@ func (p plugin) Init(conf gofra.Config, api gofra.API) {
 }
 
 func handleAssetInfo(e gofra.Event) gofra.Reply {
-	var r gofra.Reply
 	asset := defaultAsset
 	argLine := e.Payload["commandBody"].(string)
 	args := strings.Split(argLine, " ")
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
-		r = gofra.Reply{}
-		r.SetAnswer("Wrong command")
-		return r
+		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
+			g.Logger.Error(err.Error())
+
+			return gofra.Reply{}
+		}
 	}
 	//Remove command and leave just the args for it
 	args = args[1:]
@@ -70,47 +70,60 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		r = gofra.Reply{Ok: true, Empty: false}
-		r.SetAnswer("Something went wrong")
-		return r
+		if err := g.SendStanza(e.MB.Reply("Something went wrong")); err != nil {
+			g.Logger.Error(err.Error())
+
+			return gofra.Reply{Ok: true, Empty: false}
+		}
 	}
+
 	var result map[string]interface{}
 	log.Println(resp.Body)
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		r = gofra.Reply{Ok: true, Empty: false}
-		r.SetAnswer("Invalid response")
-		return r
+		if err := g.SendStanza(e.MB.Reply("Invalid response")); err != nil {
+			g.Logger.Error(err.Error())
+
+			return gofra.Reply{Ok: true, Empty: false}
+		}
 	}
 
 	aux := result["result"]
 	resultMap := aux.(map[string]interface{})
 	payload, ok := resultMap[asset]
 	if !ok {
-		r = gofra.Reply{Ok: true, Empty: false}
-		r.SetAnswer("Asset not found")
-		return r
+		if err := g.SendStanza(e.MB.Reply("Asset not found")); err != nil {
+			g.Logger.Error(err.Error())
+
+			return gofra.Reply{Ok: true, Empty: false}
+		}
 	}
+
 	payloadMap := payload.(map[string]interface{})
 	description, ok := payloadMap["AssetDescription"]
 	if !ok {
-		r = gofra.Reply{Ok: true, Empty: false}
-		r.SetAnswer("No description for " + asset + " yet")
-		return r
+		if err := g.SendStanza(e.MB.Reply("No description for " + asset + " yet")); err != nil {
+			g.Logger.Error(err.Error())
+
+			return gofra.Reply{Ok: true, Empty: false}
+		}
 	}
+
 	descriptionString := description.(string)
 	if descriptionString == "" {
-		r = gofra.Reply{Ok: true, Empty: false}
-		r.SetAnswer("No description for " + asset + " yet")
-		return r
+		if err := g.SendStanza(e.MB.Reply("No description for " + asset + " yet")); err != nil {
+			g.Logger.Error(err.Error())
+
+			return gofra.Reply{Ok: true, Empty: false}
+		}
 	}
+
 	log.Println(result)
 
-	r = gofra.Reply{Ok: true, Empty: false}
-	r.SetAnswer(descriptionString)
+	if err := g.SendStanza(e.MB.Reply(descriptionString)); err != nil {
+		g.Logger.Error(err.Error())
+	}
 
-	command.YOLO()
-
-	return r
+	return gofra.Reply{Ok: true, Empty: false}
 }
 
 var Plugin plugin

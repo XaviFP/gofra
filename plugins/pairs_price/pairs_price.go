@@ -45,15 +45,15 @@ func (p plugin) Init(c gofra.Config, gofra gofra.Gofra) {
 }
 
 func handlePrice(e gofra.Event) gofra.Reply {
-	var r gofra.Reply
 	exchange := defaultExchange
 	pair := defaultPair
 	argLine := e.MB.Body
 	args := strings.Split(argLine, " ")
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+command {
-		r = gofra.Reply{Ok: false}
-		r.SetAnswer("Wrong command")
-		return r
+		if err := g.SendStanza(e.MB.Reply("Too many arguments")); err != nil {
+			g.Logger.Error(err.Error())
+			return gofra.Reply{Ok: false}
+		}
 	}
 
 	//Remove command and leave just the args for it
