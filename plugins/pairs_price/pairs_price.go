@@ -14,7 +14,7 @@ import (
 	"gofra/gofra"
 )
 
-type plugin string
+type plugin struct{}
 
 const command = "price"
 const metadataPrefix = "https://api.cryptowat.ch/markets/"
@@ -22,7 +22,7 @@ const metadataSufix = "/price"
 const defaultExchange = "kraken"
 const defaultPair = "btcusd"
 
-var g gofra.Gofra
+var g *gofra.Gofra
 var config gofra.Config
 
 func (p plugin) Name() string {
@@ -33,7 +33,7 @@ func (p plugin) Description() string {
 	return "Provides price equivalences of crypto assets"
 }
 
-func (p plugin) Init(c gofra.Config, gofra gofra.Gofra) {
+func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
 	config = c
 	g.Subscribe(
@@ -50,7 +50,7 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	argLine := e.MB.Body
 	args := strings.Split(argLine, " ")
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+command {
-		if err := g.SendStanza(e.MB.Reply("Too many arguments")); err != nil {
+		if err := g.SendStanza(e.MB.Reply(config, "Too many arguments")); err != nil {
 			g.Logger.Error(err.Error())
 			return gofra.Reply{Ok: false}
 		}
@@ -60,7 +60,7 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	args = args[1:]
 	if argLine != "" {
 		if len(args) > 2 {
-			if err := g.SendStanza(e.MB.Reply("Too many arguments")); err != nil {
+			if err := g.SendStanza(e.MB.Reply(config, "Too many arguments")); err != nil {
 				g.Logger.Error(err.Error())
 
 				return gofra.Reply{Empty: true}
@@ -99,10 +99,10 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	resultMap := aux.(map[string]interface{})
 	priceField, ok := resultMap["price"]
 	if !ok {
-		if err := g.SendStanza(e.MB.Reply("Price for pair not found")); err != nil {
+		if err := g.SendStanza(e.MB.Reply(config, "Price for pair not found")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{Empty: true} // TODO LOG ERROR
+			return gofra.Reply{Empty: true}
 		}
 
 		return gofra.Reply{Ok: true}
@@ -113,10 +113,10 @@ func handlePrice(e gofra.Event) gofra.Reply {
 
 	log.Println(price)
 
-	if err := g.SendStanza(e.MB.Reply(price)); err != nil {
+	if err := g.SendStanza(e.MB.Reply(config, price)); err != nil {
 		g.Logger.Error(err.Error())
 
-		return gofra.Reply{Empty: true} // TODO LOG ERROR
+		return gofra.Reply{Empty: true}
 	}
 
 	return gofra.Reply{Ok: true}

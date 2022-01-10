@@ -6,6 +6,7 @@ import (
 	"io"
 
 	"mellium.im/xmlstream"
+	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 )
 
@@ -14,9 +15,19 @@ type MessageBody struct {
 	Body string `xml:"body"`
 }
 
-func (mb MessageBody) Reply(body string) MessageBody {
+func (mb MessageBody) Reply(config Config, body string) MessageBody {
 	reply := mb
 	reply.Body = body
+	if mb.Type == stanza.GroupChatMessage {
+		for _, muc := range config.MUCs {
+			if muc.Jid == reply.From.Bare().String() {
+				reply.To, reply.From = mb.From.Bare(), jid.MustParse(muc.Jid + "/" + muc.Nick)
+
+				return reply
+			}
+		}
+
+	}
 	reply.To, reply.From = mb.From, mb.To
 
 	return reply

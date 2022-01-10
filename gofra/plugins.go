@@ -75,25 +75,21 @@ func isPlugin(fileName string) (Plugin, bool) {
 		return nil, false
 	}
 
-	// TODO Change the following comments
-	// load module
-	// 1. open the so file to load the symbols
+	// Load binary module
 	goPlugin, err := plugin.Open(fileName)
 	if err != nil {
 		log.Println(err)
 		return nil, false
 	}
 
-	// 2. look up a symbol (an exported function or variable)
-	// in this case, variable Plugin
+	// Look up exported "Plugin" symbol
 	symPlugin, err := goPlugin.Lookup("Plugin")
 	if err != nil {
 		log.Println(err)
 		return nil, false
 	}
 
-	// 3. Assert that loaded symbol is of a desired type
-	// in this case interface type Plugin (defined above)
+	// Assert that loaded symbol is of interface type Plugin
 	p, ok := symPlugin.(Plugin)
 	if !ok {
 		log.Printf("unexpected type from module symbol in file %s", fileName)

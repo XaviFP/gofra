@@ -25,7 +25,8 @@ type API interface {
 	Publish(event Event) Reply
 	SetPriority(eventName, pluginName string, priority int) error
 	SendStanza(stanza interface{}) error
-	// Add AddMuxOption and AddMuxOptions if required
+	AddMuxOption(o mux.Option)
+	AddMuxOptions(opts []mux.Option)
 }
 type Gofra struct {
 	config       Config
@@ -74,8 +75,7 @@ func NewGofra(ctx context.Context, config Config) *Gofra {
 	return gofra
 }
 
-// TODO modify comment
-// Send function wrapper to make sending messages easier
+// Wrapper to ease sending messages
 func (g *Gofra) SendMessage(to, body string, msgType stanza.MessageType) error {
 	j, err := jid.Parse(to)
 	if err != nil {

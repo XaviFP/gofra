@@ -2,11 +2,13 @@ build:
 	go build -o bin/gofra .
 
 build_plugins:
-	go build -buildmode=plugin -o bin/plugins/cryptoasset_info.so plugins/cryptoasset_info.go
-	go build -buildmode=plugin -o bin/plugins/command.so plugins/command.go
-	go build -buildmode=plugin -o bin/plugins/muc.so plugins/muc.go
-	go build -buildmode=plugin -o bin/plugins/reminder.so plugins/reminder.go
-	go build -buildmode=plugin -o bin/plugins/pairs_price.so plugins/pairs_price.go
+	go build -buildmode=plugin -o bin/plugins/cryptoasset_info.so plugins/cryptoasset_info/cryptoasset_info.go
+	go build -buildmode=plugin -o bin/plugins/command.so plugins/command/command.go
+	go build -buildmode=plugin -o bin/plugins/muc.so plugins/muc/muc.go
+	go build -buildmode=plugin -o bin/plugins/reminder.so plugins/reminder/reminder.go
+	go build -buildmode=plugin -o bin/plugins/pairs_price.so plugins/pairs_price/pairs_price.go
+	go build -buildmode=plugin -o bin/plugins/dice.so plugins/dice/dice.go
+	go build -buildmode=plugin -o bin/plugins/pick.so plugins/pick/pick.go
 
 build_test_plugins:
 	go build -buildmode=plugin -o test_plugins/bin/naughty.so test_plugins/naughty.go

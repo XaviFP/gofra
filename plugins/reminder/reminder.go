@@ -16,7 +16,7 @@ import (
 	"gofra/gofra"
 )
 
-type plugin string
+type plugin struct{}
 
 type reminder struct {
 	time    int64
@@ -40,8 +40,8 @@ func (p plugin) Description() string {
 	return "Reminds you or another recipient of something you noted"
 }
 
-func (p plugin) Init(c gofra.Config, api gofra.API) {
-	g, _ = api.(*gofra.Gofra)
+func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
+	g = gofra
 	config = c
 	g.Subscribe(
 		"command/remind",
@@ -85,7 +85,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 	 * !remind [message]
 	 */
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
-		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
+		if err := g.SendStanza(e.MB.Reply(config, "Wrong command")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return gofra.Reply{}
@@ -96,7 +96,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 	args = args[1:]
 
 	if len(args) < 1 || (len(args) > 0 && args[0] == "") {
-		if err := g.SendStanza(e.MB.Reply("Need a message to remind")); err != nil {
+		if err := g.SendStanza(e.MB.Reply(config, "Need a message to remind")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return gofra.Reply{}
@@ -125,7 +125,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 	rmdr := reminder{time: segs + 10, to: msg.From, from: msg.From, msg: msg.Body, msgType: msg.Type}
 	addReminder(rmdr)
 
-	if err := g.SendStanza(e.MB.Reply("Reminder added")); err != nil {
+	if err := g.SendStanza(e.MB.Reply(config, "Reminder added")); err != nil {
 		g.Logger.Error(err.Error())
 	}
 	return gofra.Reply{Ok: true, Empty: false}

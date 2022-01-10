@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-type plugin string
+type plugin struct{}
 
 const defaultCommandChar = "!"
 const name = "Commands"

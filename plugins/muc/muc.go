@@ -13,7 +13,7 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
-type plugin string // TODO check what is the best type for this case
+type plugin struct{}
 
 var g *gofra.Gofra
 var config gofra.Config
@@ -69,7 +69,7 @@ func handlePresence(e gofra.Event) gofra.Reply {
 	}
 
 	occupantNick := ""
-	//Parse presence and determine if it's MUC-related
+	// Parse presence and determine if it's MUC-related
 	mucJid := pres.From.Bare().String()
 
 	if pres.From.Resourcepart() != "" {
@@ -89,12 +89,16 @@ func handlePresence(e gofra.Event) gofra.Reply {
 	}
 
 	if pres.Type == stanza.UnavailablePresence {
-		occupantLeft(mucJid, occupantNick)
-		g.Publish(
-			gofra.Event{
-				//TODO send muc and occupant in the event
-				Name: "muc/occupantLeftMuc",
+		if occupantLeft(mucJid, occupantNick) {
+			g.Publish(
+				gofra.Event{
+					Name: "muc/occupantLeftMuc",
+					Payload: map[string]interface{}{
+						occupantNick: occupantNick,
+						mucJid: mucJid,
+					},
 			})
+		}
 	}
 
 	if !occupantJoined(mucJid, occupantNick) {
@@ -104,21 +108,26 @@ func handlePresence(e gofra.Event) gofra.Reply {
 
 	g.Publish(
 		gofra.Event{
-			//TODO send muc and occupant in the event
 			Name: "muc/occupantJoinedMuc",
-		})
+			Payload: map[string]interface{}{
+				occupantNick: occupantNick,
+				mucJid: mucJid,
+			},
+	})
 
 	return gofra.Reply{Ok: true, Empty: true}
 }
 
-func occupantLeft(room, occupant string) {
+func occupantLeft(room, occupant string) bool{
 	position, exists := isOccupant(room, occupant)
 	if !exists {
 
-		return
+		return false
 	}
 	occupants[room][position] = occupants[room][len(room)-1]
 	occupants[room] = occupants[room][:len(room)-1]
+
+	return true
 }
 
 func occupantJoined(room, occupant string) bool {
