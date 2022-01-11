@@ -8,7 +8,7 @@ import (
 	"gofra/gofra"
 )
 
-type plugin string
+type plugin struct{}
 
 func (p plugin) Name() string {
 	return "naughty"
@@ -23,7 +23,7 @@ func (p plugin) Init(c gofra.Config, api gofra.API) {
 		"naughtyCrash",
 		p.Name(),
 		naughtyCrash,
-		gofra.Options{},
+		0,
 	)
 	panic("naughtyInitCrash")
 }

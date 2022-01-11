@@ -8,7 +8,7 @@ import (
 	"gofra/gofra"
 )
 
-type plugin string
+type plugin struct{}
 
 func (p plugin) Name() string {
 	return "notReally"

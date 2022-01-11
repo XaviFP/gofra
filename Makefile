@@ -11,9 +11,9 @@ build_plugins:
 	go build -buildmode=plugin -o bin/plugins/pick.so plugins/pick/pick.go
 
 build_test_plugins:
-	go build -buildmode=plugin -o test_plugins/bin/naughty.so test_plugins/naughty.go
-	go build -buildmode=plugin -o test_plugins/bin/normie.so test_plugins/normie.go
-	go build -buildmode=plugin -o test_plugins/bin/not_really.so test_plugins/not_really.go
+	go build -buildmode=plugin -o test_plugins/bin/naughty.so test_plugins/naughty/naughty.go
+	go build -buildmode=plugin -o test_plugins/bin/normie.so test_plugins/normie/normie.go
+	go build -buildmode=plugin -o test_plugins/bin/not_really.so test_plugins/not_really/not_really.go
 
 all: build build_plugins
 

@@ -8,7 +8,7 @@ import (
 	"gofra/gofra"
 )
 
-type plugin string
+type plugin struct{}
 
 func (p plugin) Name() string {
 	return "normie"
@@ -18,7 +18,7 @@ func (p plugin) Description() string {
 	return "Just hanging 'round y'know?"
 }
 
-func (p plugin) Init(c gofra.Config, api gofra.API) {
+func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	// Yeah, business as usual
 }
 

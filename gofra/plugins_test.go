@@ -15,7 +15,7 @@ func TestNewPlugins(t *testing.T) {
 
 func TestLoadAllPlugins(t *testing.T) {
 	config := Config{PluginPaths: []string{test_plugins_path}}
-	var g API
+	var g *Gofra
 	plugins := NewPlugins(config)
 	plugins.loadAll(config, g)
 
@@ -64,13 +64,13 @@ func TestIsPlugin(t *testing.T) {
 
 func TestLoadPlugin(t *testing.T) {
 	config := Config{PluginPaths: []string{test_plugins_path}}
-	var g API
+	var g *Gofra
 	plugins := NewPlugins(config)
-	ok := plugins.load(test_plugins_path+"not_really.so", config, g)
+	ok := plugins.load(test_plugins_path + "not_really.so", config, g)
 	if ok {
 		t.Error(`not_really shouldn't be a valid plugin`)
 	}
-	ok = plugins.load(test_plugins_path+"normie.so", config, g)
+	ok = plugins.load(test_plugins_path + "normie.so", config, g)
 	if !ok {
 		t.Error(`normie should be a valid plugin`)
 	}
@@ -78,4 +78,27 @@ func TestLoadPlugin(t *testing.T) {
 		t.Error(`plugin normie was not loaded correctly`)
 	}
 
+}
+
+
+func TestRunPanickingHandler(t *testing.T) {
+	config := Config{PluginPaths: []string{test_plugins_path}}
+	var g *Gofra
+	g.plugins = NewPlugins(config)
+	g.em = NewEventManager(g.Logger)
+	ok := g.plugins.load(test_plugins_path + "naughty.so", config, g)
+	if ok {
+		t.Error(`naughty should be a valid plugin`)
+	}
+	publishPanickingEvent(g, t)
+}
+
+func publishPanickingEvent(g *Gofra, t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			t.Error(`naughtyCrash handler shouldn't be able to crash gofra`)
+		}
+	}()
+
+	g.Publish(Event{Name: "naughtyCrash"})
 }
