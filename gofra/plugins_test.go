@@ -1,104 +1,87 @@
 package gofra
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const test_plugins_path = "../test_plugins/bin/"
 
-func TestNewPlugins(t *testing.T) {
-	plugins := NewPlugins(Config{})
-	if len(plugins) != 0 {
-		t.Error(`NewEvents returns a non empty Events object`)
-	}
-}
+// func TestLoadAllPlugins(t *testing.T) {
+// 	config := Config{PluginPaths: []string{test_plugins_path}}
+// 	var g *Gofra
+// 	plugins := NewPlugins(config)
+// 	plugins.loadAll(config, g)
 
-func TestLoadAllPlugins(t *testing.T) {
-	config := Config{PluginPaths: []string{test_plugins_path}}
-	var g *Gofra
-	plugins := NewPlugins(config)
-	plugins.loadAll(config, g)
-
-	if len(plugins) != 2 {
-		t.Error(`plugins were not loaded correctly`)
-	}
-}
+// 	assert.Len(t, plugins, 2)
+// }
 
 func TestGetFileNamesInPaths(t *testing.T) {
 	fileNames, err := getFileNamesInPaths([]string{test_plugins_path})
-	if err != nil {
-		// Skip if there's a File System failure
-		return
+	assert.Nil(t, err)
+
+	expected := []string{
+		fmt.Sprintf("%snaughty.so", test_plugins_path),
+		fmt.Sprintf("%snormie.so", test_plugins_path),
+		fmt.Sprintf("%snot_really.so", test_plugins_path),
 	}
-	referenceNames := []string{"naughty.so", "normie.so", "not_really.so"}
-	var found bool
-	for _, rname := range referenceNames {
+	var actual []string
+
+	for _, rname := range expected {
 		for _, fname := range fileNames {
-			if fname == test_plugins_path+rname {
-				found = true
+				if fname == rname{
+				actual = append(actual, fname)
 				break
 			}
 		}
-		if !found {
-			t.Errorf(`file %s should be in list %v`, rname, fileNames)
-		}
-		found = false
 	}
+
+	assert.ElementsMatch(t, expected, actual)
 }
 
-func TestIsPlugin(t *testing.T) {
-	_, ok := isPlugin(test_plugins_path + "not_really.so")
-	if ok {
-		t.Error(`not_really shouldn't be a valid plugin`)
-	}
-	_, ok = isPlugin(test_plugins_path + "normie.so")
-	if !ok {
-		t.Error(`normie should be a valid plugin`)
-	}
-	_, ok = isPlugin(test_plugins_path + "naughty.so")
-	if !ok {
-		t.Error(`naughty should be a valid plugin`)
-	}
+// func TestIsPlugin(t *testing.T) {
+// 	_, ok := isPlugin(test_plugins_path + "not_really.so")
+// 	assert.False(t, ok)
 
-}
+// 	_, ok = isPlugin(test_plugins_path + "normie.so")
+// 	assert.True(t, ok)
 
-func TestLoadPlugin(t *testing.T) {
-	config := Config{PluginPaths: []string{test_plugins_path}}
-	var g *Gofra
-	plugins := NewPlugins(config)
-	ok := plugins.load(test_plugins_path + "not_really.so", config, g)
-	if ok {
-		t.Error(`not_really shouldn't be a valid plugin`)
-	}
-	ok = plugins.load(test_plugins_path + "normie.so", config, g)
-	if !ok {
-		t.Error(`normie should be a valid plugin`)
-	}
-	if plugins["normie"].Name() != "normie" {
-		t.Error(`plugin normie was not loaded correctly`)
-	}
+// 	_, ok = isPlugin(test_plugins_path + "naughty.so")
+// 	assert.True(t, ok)
+// }
 
-}
+// func TestLoadPlugin(t *testing.T) {
+// 	config := Config{PluginPaths: []string{test_plugins_path}}
+// 	var g *Gofra
+// 	plugins := NewPlugins(config)
 
+// 	ok := plugins.load(test_plugins_path + "not_really.so", config, g)
+// 	assert.False(t, ok)
 
-func TestRunPanickingHandler(t *testing.T) {
-	config := Config{PluginPaths: []string{test_plugins_path}}
-	var g *Gofra
-	g.plugins = NewPlugins(config)
-	g.em = NewEventManager(g.Logger)
-	ok := g.plugins.load(test_plugins_path + "naughty.so", config, g)
-	if ok {
-		t.Error(`naughty should be a valid plugin`)
-	}
-	publishPanickingEvent(g, t)
-}
+// 	ok = plugins.load(test_plugins_path + "normie.so", config, g)
+// 	assert.True(t, ok)
 
-func publishPanickingEvent(g *Gofra, t *testing.T) {
-	defer func() {
-		if err := recover(); err != nil {
-			t.Error(`naughtyCrash handler shouldn't be able to crash gofra`)
-		}
-	}()
+// 	assert.Equal(t, "normie", plugins["normie"].Name())
+// }
 
-	g.Publish(Event{Name: "naughtyCrash"})
-}
+// func TestRunPanickingHandler(t *testing.T) {
+// 	config := Config{PluginPaths: []string{test_plugins_path}}
+// 	var g *Gofra
+// 	g.plugins = NewPlugins(config)
+// 	g.em = NewEventManager(g.Logger)
+
+// 	ok := g.plugins.load(test_plugins_path + "naughty.so", config, g)
+// 	assert.False(t, ok)
+
+// 	publishPanickingEvent(g, t)
+// }
+
+// func publishPanickingEvent(g *Gofra, t *testing.T) {
+// 	defer func() {
+// 		assert.Nil(t, recover())
+// 	}()
+
+// 	g.Publish(Event{Name: "naughtyCrash"})
+// }

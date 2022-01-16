@@ -1,8 +1,6 @@
 package gofra
 
 type Config struct {
-	ServerURL   string                            `yaml:"serverUrl"`
-	ServerPort  string                            `yaml:"serverPort"`
 	Password    string                            `yaml:"password"`
 	PluginPaths []string                          `yaml:"pluginPaths"`
 	Jid         string                            `yaml:"jid"`

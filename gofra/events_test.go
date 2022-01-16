@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEvents_PublishSubscribeEvent(t *testing.T) {
+func TestEvents_PublishSubscribe(t *testing.T) {
 	em := NewEventManager(Logger{})
 	var ran bool
 

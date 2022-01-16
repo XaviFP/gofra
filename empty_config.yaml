@@ -1,8 +1,6 @@
-serverUrl: ""
-serverPort: ""
 password: ""
 pluginPaths:
-  - "plugins/"
+  - "bin/plugins/"
 jid: ""
 nick: ""
 mucs:
@@ -13,5 +11,7 @@ mucs:
 plugins:
   Commands:
     commandChar: "!"
+  Dice:
+    defaultDice: 6
 
 extra:
