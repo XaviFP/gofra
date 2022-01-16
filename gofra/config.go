@@ -9,7 +9,6 @@ type Config struct {
 	Debug       bool                              `yaml:"debug"`
 	MUCs        []MUCConfig                       `yaml:"mucs"`
 	Plugins     map[string]map[string]interface{} `yaml:"plugins"`
-	Extra       map[string]interface{}            `yaml:"extra"`
 }
 
 // Per-MUC configuration
