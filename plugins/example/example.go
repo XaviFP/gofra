@@ -12,7 +12,7 @@ import (
 
 type plugin string
 
-var g gofra.API
+var g *gofra.Gofra
 var config gofra.Config
 
 func (p plugin) Name() string {
@@ -23,7 +23,7 @@ func (p plugin) Description() string {
 	return "Example plugin"
 }
 
-func (p plugin) Init(conf gofra.Config, api gofra.API) {
+func (p plugin) Init(conf gofra.Config, api *gofra.Gofra) {
 	g = api
 	config = conf
 	g.Subscribe(
