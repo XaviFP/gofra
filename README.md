@@ -63,9 +63,9 @@ go test -p=1 -coverprofile=coverage.out  && go tool cover -html=coverage.out
 
 Gofra plugins must comply with the Plugin interface:
 ```
-Name()
-Description()
-Init(gofra.Config, gofra.API)
+Name() string
+Description() string
+Init(Config, *Gofra)
 ```
 As parameters of the Init method the plugin receives the API object which upon to perform calls, and also the configuration passed in to gofra.
 Aditionally, the Runnable interface can be implemented:
