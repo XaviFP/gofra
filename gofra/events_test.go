@@ -24,9 +24,71 @@ func TestEvents_PublishSubscribe(t *testing.T) {
 	assert.True(t, ran)
 }
 
+func TestEvents_PublishSubscribeChain(t *testing.T) {
+	em := NewEventManager(Logger{})
+	var testString string
+
+	em.Subscribe(
+		"addedEventListener",
+		"testPlugin",
+		nil,
+		func(e *Event) {
+			e.Payload = map[string]interface{}{"test": testString}			
+		},
+		1,
+	)
+	em.Subscribe(
+		"addedEventListener",
+		"testPlugin",
+		nil,
+		func(e *Event) {
+			test, ok := e.Payload["test"].(string)
+			assert.True(t, ok)
+			assert.EqualValues(t, testString, test)	
+		},
+		0,
+	)
+
+	em.Subscribe(
+		"testEvent1",
+		"testPlugin",
+		panicHandler,
+		nil,
+		0,
+	)
+
+	em.Subscribe(
+		"testEvent2",
+		"testPlugin",
+		nil,
+		chainPanicHandler,
+		0,
+	)
+	r := em.Publish(Event{Name: "testEvent1"})
+	assert.True(t, r.EventHandled)
+
+	r = em.Publish(Event{Name: "testEvent2"})
+	assert.True(t, r.EventHandled)
+}
+
 func exampleHandler(e Event) Reply {
 	return Reply{}
 }
+
+func panicHandler(e Event) Reply {
+	panic("Panic on purpose")
+}
+
+func chainPanicHandler(e *Event) {
+	panic("Panic on purpose")
+}
+
+func TestEvents_NoHandlersPublish(t *testing.T) {
+	em := NewEventManager(Logger{})
+	r := em.Publish(Event{Name: "testEvent"})
+	assert.False(t, r.EventHandled)
+}
+
 func TestEvents_Setpriority(t *testing.T) {
 	em := NewEventManager(Logger{})
 
@@ -47,6 +109,40 @@ func TestEvents_Setpriority(t *testing.T) {
 
 	assert.Equal(t, "testPlugin2", em.handlers["addedEventListener"][0].PluginName)
 
-	em.SetPriority("addedEventListener", "testPlugin1", 3)
+	err := em.SetPriority("addedEventListener", "testPlugin1", 3)
+	assert.Nil(t, err)
 	assert.Equal(t, "testPlugin1", em.handlers["addedEventListener"][0].PluginName)
+
+	err = em.SetPriority("madeUpEvent", "testPlugin1", 3)
+	assert.NotNil(t, err)
+
+	em.Subscribe(
+		"testEvent",
+		"testPlugin1",
+		exampleHandler,
+		nil,
+		0,
+	)
+	err = em.SetPriority("testEvent", "testPlugin5", 3)
+	assert.NotNil(t, err)
+
+	err = em.SetPriority("testEvent", "testPlugin1", 0)
+	assert.Nil(t, err)
+}
+
+func TestEvents_SetStanza(t *testing.T) {
+	e := Event{}
+	e.SetStanza(MessageBody{Body: "Hello body"})
+	testMessageBody, ok := e.Payload["stanza"].(MessageBody)
+	assert.True(t, ok)
+	assert.EqualValues(t, testMessageBody.Body, "Hello body")
+}
+
+func TestEvents_GetStanza(t *testing.T) {
+	e := Event{}
+	assert.Nil(t, e.GetStanza())
+	e.SetStanza(MessageBody{Body: "Hello body"})
+	testMessageBody, ok := e.GetStanza().(MessageBody)
+	assert.True(t, ok)
+	assert.EqualValues(t, testMessageBody.Body, "Hello body")
 }
