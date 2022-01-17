@@ -32,6 +32,7 @@ func NewLogger(debug bool) Logger {
 		warn:  log.New(os.Stderr, "WARN ", flags),
 		err:   log.New(os.Stderr, "ERROR ", flags),
 	}
+	logger.logLevel = LogLevelInfo
 
 	if debug {
 		logger.debug.SetOutput(os.Stderr)

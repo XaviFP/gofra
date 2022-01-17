@@ -9,6 +9,10 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"github.com/olebedev/when"
+	//"github.com/olebedev/when/rules"
+	"github.com/olebedev/when/rules/common"
+	"github.com/olebedev/when/rules/en"
 
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
@@ -31,6 +35,8 @@ const commandStr = "remind"
 var g *gofra.Gofra
 var config gofra.Config
 var reminders []reminder
+var occupants = make(map[string][]string)
+var w = when.New(nil)
 
 func (p plugin) Name() string {
 	return "Remind"
@@ -49,12 +55,25 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 		handleReminder,
 		0,
 	)
+	w.Add(en.All...)
+	w.Add(common.All...)
 }
 
 func (p plugin) Run() {
 	g.Logger.Info("Reminder Run method running . . .")
+	fiveSecs := 0
 	for {
 		time.Sleep(1 * time.Second) // wait 1 sec
+		fiveSecs++
+		if fiveSecs % 5 == 0 {
+			r := g.Publish(gofra.Event{Name: "muc/getOccupants"})
+			o, ok := r.Payload["occupants"].(map[string][]string)
+			if ok {
+				occupants = o
+			}
+			fiveSecs = 0
+		}
+
 		now := time.Now()
 		segs := now.Unix()
 		if len(reminders) < 1 {
@@ -78,7 +97,7 @@ func (p plugin) Run() {
 }
 
 func handleReminder(e gofra.Event) gofra.Reply {
-	argLine := e.Payload["commandBody"].(string)
+	argLine := e.MB.Body
 	args := strings.Split(argLine, " ")
 	/* !remind me tomorrow to buy milk
 	 * !remind [target] [time] message:[message]
@@ -103,32 +122,54 @@ func handleReminder(e gofra.Event) gofra.Reply {
 		}
 	}
 
-	msg, ok := e.GetStanza().(*gofra.MessageBody)
-	if !ok {
-		g.Logger.Debug(fmt.Sprintf("Ignoring packet: %T\n", e.GetStanza()))
-
-		return gofra.Reply{Empty: true}
-	}
-
-	if msg == nil {
-		g.Logger.Debug("Error msg is nil in command plugin")
-
-		return gofra.Reply{Empty: true}
-	}
+	msg := e.MB
 
 	if msg.Body == "" {
 
 		return gofra.Reply{Empty: true}
 	}
-	now := time.Now()
-	segs := now.Unix()
-	rmdr := reminder{time: segs + 10, to: msg.From, from: msg.From, msg: msg.Body, msgType: msg.Type}
+
+	t, err := w.Parse(msg.Body, time.Now())
+	if err != nil {
+		g.Logger.Debug(fmt.Sprintf("%v", err))
+		if err := g.SendStanza(e.MB.Reply(config, "Couldn't parse date")); err != nil {
+			g.Logger.Error(err.Error())
+		}
+	}
+	g.Logger.Debug(fmt.Sprintf("%v", t))
+
+	answer := ""
+	if msg.Type == stanza.GroupChatMessage {
+		_, isParticipant := isOccupant(msg.From.Bare().String(), args[0])
+		if args[0] == "me" || !isParticipant {
+			answer += msg.From.Resourcepart() + ", "
+		} else {
+			answer += args[0] + ", "
+		}
+		answer += strings.Join(args[1:], " ")
+	} else {
+		answer += strings.Join(args, " ")
+	}
+	
+	rmdr := reminder{time: t.Time.Unix(), to: msg.From, from: msg.From, msg: answer, msgType: msg.Type}
 	addReminder(rmdr)
 
 	if err := g.SendStanza(e.MB.Reply(config, "Reminder added")); err != nil {
 		g.Logger.Error(err.Error())
 	}
 	return gofra.Reply{Ok: true, Empty: false}
+}
+
+func isOccupant(room, occupant string) (int, bool) {
+	position := -1
+	for index, occ := range occupants[room] {
+		if occ == occupant {
+			position = index
+			break
+		}
+	}
+
+	return position, position != -1
 }
 
 func addReminder(rmdr reminder) {

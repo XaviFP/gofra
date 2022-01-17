@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 	"gofra/gofra"
 
 	"mellium.im/xmpp/jid"
@@ -45,7 +46,24 @@ func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {
 		handlePresence,
 		0,
 	)
+	g.Subscribe(
+		"muc/getOccupants",
+		p.Name(),
+		getOccupants,
+		0,
+	)
 	g.AddMuxOption(muc.HandleClient(client))
+}
+
+func (p plugin) Run() {
+	for {
+		time.Sleep(10 * time.Second) // wait 1 sec
+		g.Logger.Error(fmt.Sprintf("%v", occupants))
+	}
+}
+
+func getOccupants(e gofra.Event) gofra.Reply {
+	return gofra.Reply{Payload: map[string]interface{}{"occupants": occupants}}
 }
 
 func prepareMUCs() {
