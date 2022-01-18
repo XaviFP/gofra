@@ -134,6 +134,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 		g.Logger.Debug(fmt.Sprintf("%v", err))
 		if err := g.SendStanza(e.MB.Reply(config, "Couldn't parse date")); err != nil {
 			g.Logger.Error(err.Error())
+			return gofra.Reply{Empty: true}
 		}
 	}
 	g.Logger.Debug(fmt.Sprintf("%v", t))
@@ -150,7 +151,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 	} else {
 		answer += strings.Join(args, " ")
 	}
-	
+	answer = strings.Replace(answer, t.Text, "", -1)
 	rmdr := reminder{time: t.Time.Unix(), to: msg.From, from: msg.From, msg: answer, msgType: msg.Type}
 	addReminder(rmdr)
 
