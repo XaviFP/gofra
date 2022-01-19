@@ -44,7 +44,7 @@ func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {
 
 func handleAssetInfo(e gofra.Event) gofra.Reply {
 	asset := defaultAsset
-	argLine := e.Payload["commandBody"].(string)
+	argLine := e.MB.Body
 	args := strings.Split(argLine, " ")
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
 		if err := g.SendStanza(e.MB.Reply(config, "Wrong command")); err != nil {

@@ -151,6 +151,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 	} else {
 		answer += strings.Join(args, " ")
 	}
+
 	answer = strings.Replace(answer, t.Text, "", -1)
 	rmdr := reminder{time: t.Time.Unix(), to: msg.From, from: msg.From, msg: answer, msgType: msg.Type}
 	addReminder(rmdr)
