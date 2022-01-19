@@ -42,7 +42,7 @@ func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {
 	)
 }
 
-func handleAssetInfo(e gofra.Event) gofra.Reply {
+func handleAssetInfo(e gofra.Event) *gofra.Reply {
 	asset := defaultAsset
 	argLine := e.MB.Body
 	args := strings.Split(argLine, " ")
@@ -50,7 +50,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 		if err := g.SendStanza(e.MB.Reply(config, "Wrong command")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{}
+			return nil
 		}
 	}
 	//Remove command and leave just the args for it
@@ -69,11 +69,13 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 	}
 	defer resp.Body.Close()
 
+	r := &gofra.Reply{Ok: true, Empty: false}
+
 	if resp.StatusCode != http.StatusOK {
 		if err := g.SendStanza(e.MB.Reply(config, "Something went wrong")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{Ok: true, Empty: false}
+			return r
 		}
 	}
 
@@ -83,7 +85,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 		if err := g.SendStanza(e.MB.Reply(config, "Invalid response")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{Ok: true, Empty: false}
+			return r
 		}
 	}
 
@@ -94,7 +96,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 		if err := g.SendStanza(e.MB.Reply(config, "Asset not found")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{Ok: true, Empty: false}
+			return r
 		}
 	}
 
@@ -104,7 +106,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 		if err := g.SendStanza(e.MB.Reply(config, "No description for " + asset + " yet")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{Ok: true, Empty: false}
+			return r
 		}
 	}
 
@@ -113,7 +115,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 		if err := g.SendStanza(e.MB.Reply(config, "No description for " + asset + " yet")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{Ok: true, Empty: false}
+			return r
 		}
 	}
 
@@ -123,7 +125,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 		g.Logger.Error(err.Error())
 	}
 
-	return gofra.Reply{Ok: true, Empty: false}
+	return r
 }
 
 var Plugin plugin

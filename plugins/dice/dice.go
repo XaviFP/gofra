@@ -102,13 +102,13 @@ func do(throw throw, r *rand.Rand) string {
 	return results
 }
 
-func throwDice(e gofra.Event) gofra.Reply {
+func throwDice(e gofra.Event) *gofra.Reply {
 
 	argLine := strings.Split(e.MB.Body, " ")
 	if argLine[0] != config.Plugins["Commands"]["commandChar"].(string)+command {
 		if err := g.SendStanza(e.MB.Reply(config, "Wrong command")); err != nil {
 			g.Logger.Error(err.Error())
-			return gofra.Reply{}
+			return nil
 		}
 	}
 
@@ -119,7 +119,7 @@ func throwDice(e gofra.Event) gofra.Reply {
 		if err := g.SendStanza(e.MB.Reply(config, "Need dice information to throw")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{}
+			return nil
 		}
 	}
 
@@ -131,10 +131,10 @@ func throwDice(e gofra.Event) gofra.Reply {
 	if err := g.SendStanza(e.MB.Reply(config, answer)); err != nil {
 		g.Logger.Error(err.Error())
 
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
-	return gofra.Reply{Ok: true}
+	return &gofra.Reply{Ok: true}
 }
 
 var Plugin plugin

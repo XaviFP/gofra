@@ -32,7 +32,7 @@ func (p plugin) Run() {
 	panic("naughtyRunCrash")
 }
 
-func naughtyCrash(e gofra.Event) gofra.Reply {
+func naughtyCrash(e gofra.Event) *gofra.Reply {
 	panic("naughtyCrash")
 }
 

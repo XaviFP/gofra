@@ -44,7 +44,7 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	)
 }
 
-func handlePrice(e gofra.Event) gofra.Reply {
+func handlePrice(e gofra.Event) *gofra.Reply {
 	exchange := defaultExchange
 	pair := defaultPair
 	argLine := e.MB.Body
@@ -52,7 +52,7 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+command {
 		if err := g.SendStanza(e.MB.Reply(config, "Too many arguments")); err != nil {
 			g.Logger.Error(err.Error())
-			return gofra.Reply{Ok: false}
+			return nil
 		}
 	}
 
@@ -63,10 +63,10 @@ func handlePrice(e gofra.Event) gofra.Reply {
 			if err := g.SendStanza(e.MB.Reply(config, "Too many arguments")); err != nil {
 				g.Logger.Error(err.Error())
 
-				return gofra.Reply{Empty: true}
+				return nil
 			}
 
-			return gofra.Reply{Ok: true}
+			return &gofra.Reply{Ok: true}
 		} else if len(args) == 2 {
 			pair = args[0]
 			exchange = args[1]
@@ -86,13 +86,13 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	log.Println(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	var result map[string]interface{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	aux := result["result"]
@@ -102,10 +102,10 @@ func handlePrice(e gofra.Event) gofra.Reply {
 		if err := g.SendStanza(e.MB.Reply(config, "Price for pair not found")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{Empty: true}
+			return nil
 		}
 
-		return gofra.Reply{Ok: true}
+		return &gofra.Reply{Ok: true}
 	}
 
 	priceFloat := priceField.(float64)
@@ -116,10 +116,10 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	if err := g.SendStanza(e.MB.Reply(config, price)); err != nil {
 		g.Logger.Error(err.Error())
 
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
-	return gofra.Reply{Ok: true}
+	return &gofra.Reply{Ok: true}
 }
 
 var Plugin plugin

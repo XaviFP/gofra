@@ -64,11 +64,11 @@ func StartNewSession(req roundRequest) error {
 	return nil
 }
 
-func handleCommand(e gofra.Event) gofra.Reply {
+func handleCommand(e gofra.Event) *gofra.Reply {
 	msg, ok := e.GetStanza().(gofra.MessageBody)
 	if !ok {
 		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", e.GetStanza())
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	args := strings.Split(e.MB.Body, " ")[1:]
@@ -89,7 +89,7 @@ func handleCommand(e gofra.Event) gofra.Reply {
 			if err != nil {
 				g.SendStanza(msg.Reply(config, "invalid category id"))
 
-				return gofra.Reply{Empty: true}
+				return nil
 			}
 
 			StartNewSession(roundRequest{categories: []int{categoryID}, limit: 10})
@@ -104,7 +104,7 @@ func handleCommand(e gofra.Event) gofra.Reply {
 				fmt.Sprintf("could not retrieve categories: %s", err),
 			))
 
-			return gofra.Reply{Empty: true}
+			return nil
 		}
 
 		var categories string
@@ -115,31 +115,31 @@ func handleCommand(e gofra.Event) gofra.Reply {
 		g.SendStanza(msg.Reply(config, categories))
 	}
 
-	return gofra.Reply{Empty: true}
+	return nil
 }
 
-func handleMessage(e gofra.Event) gofra.Reply {
+func handleMessage(e gofra.Event) *gofra.Reply {
 	msg, ok := e.GetStanza().(gofra.MessageBody)
 	if !ok {
 		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", e.GetStanza())
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	if msg.Type != stanza.GroupChatMessage {
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	if msg.Body == "" {
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	nextQuestion, ok := processRound(msg.From.Resourcepart(), msg.Body)
 	if !ok {
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	g.SendStanza(msg.Reply(config, nextQuestion))
-	return gofra.Reply{Empty: true}
+	return nil
 
 }
 

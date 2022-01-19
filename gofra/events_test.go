@@ -13,9 +13,9 @@ func TestEvents_PublishSubscribe(t *testing.T) {
 	em.Subscribe(
 		"addedEventListener",
 		"testPlugin",
-		func(e Event) Reply {
+		func(e Event) *Reply {
 			ran = true
-			return Reply{}
+			return nil
 		},
 		nil,
 		0,
@@ -71,11 +71,11 @@ func TestEvents_PublishSubscribeChain(t *testing.T) {
 	assert.True(t, r.EventHandled)
 }
 
-func exampleHandler(e Event) Reply {
-	return Reply{}
+func exampleHandler(e Event) *Reply {
+	return nil
 }
 
-func panicHandler(e Event) Reply {
+func panicHandler(e Event) *Reply {
 	panic("Panic on purpose")
 }
 

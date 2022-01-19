@@ -52,20 +52,20 @@ func checkConfig(config gofra.Config) {
 	}
 }
 
-func handleMessage(e gofra.Event) gofra.Reply {
+func handleMessage(e gofra.Event) *gofra.Reply {
 	msg, ok := e.GetStanza().(gofra.MessageBody)
 	if !ok {
 		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", e.GetStanza())
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	if msg.Body == "" {
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	command := ""
 	if !strings.HasPrefix(msg.Body, c.Plugins[name]["commandChar"].(string)) {
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	command = strings.Split(msg.Body, " ")[0][1:]
@@ -77,14 +77,6 @@ func handleMessage(e gofra.Event) gofra.Reply {
 	event := gofra.Event{Name: eventName, MB: msg, Payload: e.Payload}
 	reply := g.Publish(event)
 
-	// if !reply.Empty && reply.GetAnswer() != "" {
-	// 	r := gofra.MessageBody{Message: stanza.Message{Type: msgType, To: to.Bare()}, Body: reply.GetAnswer()}
-	// 	err := g.Client.Encode(g.Context, r)
-
-	// 	if err != nil {
-	// 		g.Logger.Println("Error encoding message in command Plugin: ", err)
-	// 	}
-	// }
 	return reply
 }
 

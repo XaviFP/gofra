@@ -109,7 +109,7 @@ func (g *Gofra) SubscribeChain(eventName, pluginName string, handler ChainHandle
 }
 
 // Publish executes all event handlers subscribed to a particular event
-func (g *Gofra) Publish(event Event) Reply {
+func (g *Gofra) Publish(event Event) *Reply {
 	return g.em.Publish(event)
 }
 
