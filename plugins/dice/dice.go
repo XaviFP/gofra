@@ -106,7 +106,7 @@ func throwDice(e gofra.Event) gofra.Reply {
 
 	argLine := strings.Split(e.MB.Body, " ")
 	if argLine[0] != config.Plugins["Commands"]["commandChar"].(string)+command {
-		if err := g.SendStanza(e.MB.Reply(config, "Wrong command")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
 			g.Logger.Error(err.Error())
 			return gofra.Reply{}
 		}
@@ -116,7 +116,7 @@ func throwDice(e gofra.Event) gofra.Reply {
 	throws := parseArgs(e.MB.Body)
 
 	if len(throws) == 0 {
-		if err := g.SendStanza(e.MB.Reply(config, "Need dice information to throw")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Need dice information to throw")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return gofra.Reply{}
@@ -128,7 +128,7 @@ func throwDice(e gofra.Event) gofra.Reply {
 		answer += do(throw, r) + "\n"
 	}
 
-	if err := g.SendStanza(e.MB.Reply(config, answer)); err != nil {
+	if err := g.SendStanza(e.MB.Reply(answer)); err != nil {
 		g.Logger.Error(err.Error())
 
 		return gofra.Reply{Empty: true}

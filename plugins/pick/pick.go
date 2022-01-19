@@ -101,7 +101,7 @@ func pick(e gofra.Event) gofra.Reply {
 
 	argLine := strings.Split(e.MB.Body, " ")
 	if argLine[0] != config.Plugins["Commands"]["commandChar"].(string)+command {
-		if err := g.SendStanza(e.MB.Reply(config, "Wrong command")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
 			g.Logger.Error(err.Error())
 			return gofra.Reply{}
 		}
@@ -112,7 +112,7 @@ func pick(e gofra.Event) gofra.Reply {
 	g.Logger.Error(fmt.Sprintf("%d, %v", quantity, options))
 	answer := choose(quantity, options, r)
 
-	if err := g.SendStanza(e.MB.Reply(config, answer)); err != nil {
+	if err := g.SendStanza(e.MB.Reply(answer)); err != nil {
 		g.Logger.Error(err.Error())
 
 		return gofra.Reply{Empty: true}

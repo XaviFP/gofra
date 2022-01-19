@@ -78,29 +78,28 @@ func handleCommand(e gofra.Event) gofra.Reply {
 		if len(args) == 1 {
 			if !session.started || session.finished {
 				if err := StartNewSession(roundRequest{categories: []int{}, limit: 10}); err != nil {
-					g.SendStanza(msg.Reply(config, fmt.Sprintf("Could not start new session: %s", "a")))
+					g.SendStanza(msg.Reply(fmt.Sprintf("Could not start new session: %s", "a")))
 				}
 
-				g.SendStanza(msg.Reply(config, session.current.String()))
+				g.SendStanza(msg.Reply(session.current.String()))
 			}
 
 		} else {
 			categoryID, err := strconv.Atoi(args[1])
 			if err != nil {
-				g.SendStanza(msg.Reply(config, "invalid category id"))
+				g.SendStanza(msg.Reply("invalid category id"))
 
 				return gofra.Reply{Empty: true}
 			}
 
 			StartNewSession(roundRequest{categories: []int{categoryID}, limit: 10})
-			g.SendStanza(msg.Reply(config, session.current.String()))
+			g.SendStanza(msg.Reply(session.current.String()))
 		}
 
 	case "categories":
 		res, err := repo.GetCategories()
 		if err != nil {
 			g.SendStanza(msg.Reply(
-				config,
 				fmt.Sprintf("could not retrieve categories: %s", err),
 			))
 
@@ -112,7 +111,7 @@ func handleCommand(e gofra.Event) gofra.Reply {
 			categories = fmt.Sprintf("%s%d: %s\n", categories, c.ID, c.Name)
 		}
 
-		g.SendStanza(msg.Reply(config, categories))
+		g.SendStanza(msg.Reply(categories))
 	}
 
 	return gofra.Reply{Empty: true}
@@ -138,7 +137,7 @@ func handleMessage(e gofra.Event) gofra.Reply {
 		return gofra.Reply{Empty: true}
 	}
 
-	g.SendStanza(msg.Reply(config, nextQuestion))
+	g.SendStanza(msg.Reply(nextQuestion))
 	return gofra.Reply{Empty: true}
 
 }

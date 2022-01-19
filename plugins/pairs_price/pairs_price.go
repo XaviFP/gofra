@@ -50,7 +50,7 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	argLine := e.MB.Body
 	args := strings.Split(argLine, " ")
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+command {
-		if err := g.SendStanza(e.MB.Reply(config, "Too many arguments")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Too many arguments")); err != nil {
 			g.Logger.Error(err.Error())
 			return gofra.Reply{Ok: false}
 		}
@@ -60,7 +60,7 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	args = args[1:]
 	if argLine != "" {
 		if len(args) > 2 {
-			if err := g.SendStanza(e.MB.Reply(config, "Too many arguments")); err != nil {
+			if err := g.SendStanza(e.MB.Reply("Too many arguments")); err != nil {
 				g.Logger.Error(err.Error())
 
 				return gofra.Reply{Empty: true}
@@ -99,7 +99,7 @@ func handlePrice(e gofra.Event) gofra.Reply {
 	resultMap := aux.(map[string]interface{})
 	priceField, ok := resultMap["price"]
 	if !ok {
-		if err := g.SendStanza(e.MB.Reply(config, "Price for pair not found")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Price for pair not found")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return gofra.Reply{Empty: true}
@@ -113,7 +113,7 @@ func handlePrice(e gofra.Event) gofra.Reply {
 
 	log.Println(price)
 
-	if err := g.SendStanza(e.MB.Reply(config, price)); err != nil {
+	if err := g.SendStanza(e.MB.Reply(price)); err != nil {
 		g.Logger.Error(err.Error())
 
 		return gofra.Reply{Empty: true}

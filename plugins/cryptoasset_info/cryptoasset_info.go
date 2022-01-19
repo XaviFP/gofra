@@ -47,7 +47,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 	argLine := e.MB.Body
 	args := strings.Split(argLine, " ")
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
-		if err := g.SendStanza(e.MB.Reply(config, "Wrong command")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return gofra.Reply{}
@@ -70,7 +70,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		if err := g.SendStanza(e.MB.Reply(config, "Something went wrong")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Something went wrong")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return gofra.Reply{Ok: true, Empty: false}
@@ -80,7 +80,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 	var result map[string]interface{}
 	log.Println(resp.Body)
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		if err := g.SendStanza(e.MB.Reply(config, "Invalid response")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Invalid response")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return gofra.Reply{Ok: true, Empty: false}
@@ -91,7 +91,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 	resultMap := aux.(map[string]interface{})
 	payload, ok := resultMap[asset]
 	if !ok {
-		if err := g.SendStanza(e.MB.Reply(config, "Asset not found")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Asset not found")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return gofra.Reply{Ok: true, Empty: false}
@@ -101,7 +101,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 	payloadMap := payload.(map[string]interface{})
 	description, ok := payloadMap["AssetDescription"]
 	if !ok {
-		if err := g.SendStanza(e.MB.Reply(config, "No description for " + asset + " yet")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("No description for " + asset + " yet")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return gofra.Reply{Ok: true, Empty: false}
@@ -110,7 +110,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 
 	descriptionString := description.(string)
 	if descriptionString == "" {
-		if err := g.SendStanza(e.MB.Reply(config, "No description for " + asset + " yet")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("No description for " + asset + " yet")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return gofra.Reply{Ok: true, Empty: false}
@@ -119,7 +119,7 @@ func handleAssetInfo(e gofra.Event) gofra.Reply {
 
 	log.Println(result)
 
-	if err := g.SendStanza(e.MB.Reply(config, descriptionString)); err != nil {
+	if err := g.SendStanza(e.MB.Reply(descriptionString)); err != nil {
 		g.Logger.Error(err.Error())
 	}
 
