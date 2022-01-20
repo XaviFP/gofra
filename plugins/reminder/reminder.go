@@ -104,7 +104,7 @@ func handleReminder(e gofra.Event) *gofra.Reply {
 	 * !remind [message]
 	 */
 	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
-		if err := g.SendStanza(e.MB.Reply(config, "Wrong command")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return nil
@@ -115,7 +115,7 @@ func handleReminder(e gofra.Event) *gofra.Reply {
 	args = args[1:]
 
 	if len(args) < 1 || (len(args) > 0 && args[0] == "") {
-		if err := g.SendStanza(e.MB.Reply(config, "Need a message to remind")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Need a message to remind")); err != nil {
 			g.Logger.Error(err.Error())
 
 			return nil
@@ -132,7 +132,7 @@ func handleReminder(e gofra.Event) *gofra.Reply {
 	t, err := w.Parse(msg.Body, time.Now())
 	if err != nil {
 		g.Logger.Debug(fmt.Sprintf("%v", err))
-		if err := g.SendStanza(e.MB.Reply(config, "Couldn't parse date")); err != nil {
+		if err := g.SendStanza(e.MB.Reply("Couldn't parse date")); err != nil {
 			g.Logger.Error(err.Error())
 			return nil
 		}
@@ -156,7 +156,7 @@ func handleReminder(e gofra.Event) *gofra.Reply {
 	rmdr := reminder{time: t.Time.Unix(), to: msg.From, from: msg.From, msg: answer, msgType: msg.Type}
 	addReminder(rmdr)
 
-	if err := g.SendStanza(e.MB.Reply(config, "Reminder added")); err != nil {
+	if err := g.SendStanza(e.MB.Reply("Reminder added")); err != nil {
 		g.Logger.Error(err.Error())
 	}
 	return &gofra.Reply{Ok: true, Empty: false}
