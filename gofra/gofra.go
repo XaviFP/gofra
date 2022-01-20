@@ -16,6 +16,8 @@ import (
 	"mellium.im/xmpp/stanza"
 )
 
+var mucNicks map[string]string
+
 // Interface providing plugins the needed tools to interact with the engine
 // and/or other plugins
 type API interface {
@@ -70,6 +72,11 @@ func NewGofra(ctx context.Context, config Config) *Gofra {
 		mux.Presence(stanza.UnavailablePresence, xml.Name{}, stanzaHandler),
 		mux.Message(stanza.ChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler),
 		mux.Message(stanza.GroupChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler),
+	}
+
+	mucNicks = make(map[string]string)
+	for _, muc := range config.MUCs {
+		mucNicks[muc.Jid] = muc.Nick
 	}
 
 	return gofra
