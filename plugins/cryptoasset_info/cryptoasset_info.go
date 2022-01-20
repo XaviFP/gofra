@@ -69,7 +69,7 @@ func handleAssetInfo(e gofra.Event) *gofra.Reply {
 	}
 	defer resp.Body.Close()
 
-	r := &gofra.Reply{Ok: true, Empty: false}
+	r := &gofra.Reply{Ok: true}
 
 	if resp.StatusCode != http.StatusOK {
 		if err := g.SendStanza(e.MB.Reply("Something went wrong")); err != nil {

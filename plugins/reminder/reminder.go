@@ -159,7 +159,7 @@ func handleReminder(e gofra.Event) *gofra.Reply {
 	if err := g.SendStanza(e.MB.Reply("Reminder added")); err != nil {
 		g.Logger.Error(err.Error())
 	}
-	return &gofra.Reply{Ok: true, Empty: false}
+	return &gofra.Reply{Ok: true}
 }
 
 func isOccupant(room, occupant string) (int, bool) {

@@ -47,7 +47,7 @@ func (em EventManager) Subscribe(eventName, pluginName string, handler Handler, 
 }
 
 func (em EventManager) Publish(event Event) *Reply {
-	var reply Reply
+	var reply *Reply
 
 	handlers, exist := em.handlers[event.Name]
 	if !exist || len(handlers) == 0 {
@@ -65,7 +65,7 @@ func (em EventManager) Publish(event Event) *Reply {
 		} else {
 			r := runHandler(handler, event)
 			if !answered && r != nil && r.Ok {
-				reply = *r
+				reply = r
 				answered = true
 				log.Printf("event %s was answered with reply %v", event.Name, reply)
 			}
@@ -75,14 +75,14 @@ func (em EventManager) Publish(event Event) *Reply {
 	reply.EventHandled = true
 
 	if len(chainedHandlers) == 0 {
-		return &reply
+		return reply
 	}
 
 	for _, handler := range chainedHandlers {
 		runChainHandler(handler, &event)
 	}
 
-	return &reply
+	return reply
 }
 
 func (em EventManager) SetPriority(eventName, pluginName string, priority int) error {

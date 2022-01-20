@@ -56,7 +56,7 @@ func handleExampleEvent(e gofra.Event) *gofra.Reply {
 	log.Println(data)
 
 	// return a reply
-	return &gofra.Reply{Ok: true, Empty: false, Payload: data}
+	return &gofra.Reply{Ok: true, Payload: data}
 }
 
 var Plugin plugin
