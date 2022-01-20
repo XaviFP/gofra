@@ -96,7 +96,7 @@ func (p plugin) Run() {
 	}
 }
 
-func handleReminder(e gofra.Event) gofra.Reply {
+func handleReminder(e gofra.Event) *gofra.Reply {
 	argLine := e.MB.Body
 	args := strings.Split(argLine, " ")
 	/* !remind me tomorrow to buy milk
@@ -107,7 +107,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{}
+			return nil
 		}
 	}
 
@@ -118,7 +118,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 		if err := g.SendStanza(e.MB.Reply("Need a message to remind")); err != nil {
 			g.Logger.Error(err.Error())
 
-			return gofra.Reply{}
+			return nil
 		}
 	}
 
@@ -126,7 +126,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 
 	if msg.Body == "" {
 
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	t, err := w.Parse(msg.Body, time.Now())
@@ -134,7 +134,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 		g.Logger.Debug(fmt.Sprintf("%v", err))
 		if err := g.SendStanza(e.MB.Reply("Couldn't parse date")); err != nil {
 			g.Logger.Error(err.Error())
-			return gofra.Reply{Empty: true}
+			return nil
 		}
 	}
 	g.Logger.Debug(fmt.Sprintf("%v", t))
@@ -159,7 +159,7 @@ func handleReminder(e gofra.Event) gofra.Reply {
 	if err := g.SendStanza(e.MB.Reply("Reminder added")); err != nil {
 		g.Logger.Error(err.Error())
 	}
-	return gofra.Reply{Ok: true, Empty: false}
+	return &gofra.Reply{Ok: true}
 }
 
 func isOccupant(room, occupant string) (int, bool) {

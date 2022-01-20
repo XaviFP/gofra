@@ -34,7 +34,7 @@ func (p plugin) Init(conf gofra.Config, api *gofra.Gofra) {
 	)
 }
 
-func handleExampleEvent(e gofra.Event) gofra.Reply {
+func handleExampleEvent(e gofra.Event) *gofra.Reply {
 	// do things with e
 	data := e.Payload
 	log.Println(data)
@@ -46,7 +46,7 @@ func handleExampleEvent(e gofra.Event) gofra.Reply {
 		})
 	// if reply is empty return
 	if reply.Empty {
-		r := gofra.Reply{Empty: true}
+		r := &gofra.Reply{Empty: true}
 		r.Ok = reply.Ok
 		return r
 	}
@@ -56,7 +56,7 @@ func handleExampleEvent(e gofra.Event) gofra.Reply {
 	log.Println(data)
 
 	// return a reply
-	return gofra.Reply{Ok: true, Empty: false, Payload: data}
+	return &gofra.Reply{Ok: true, Payload: data}
 }
 
 var Plugin plugin

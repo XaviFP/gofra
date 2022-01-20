@@ -46,14 +46,14 @@ func (em EventManager) Subscribe(eventName, pluginName string, handler Handler, 
 	})
 }
 
-func (em EventManager) Publish(event Event) Reply {
-	var reply Reply
+func (em EventManager) Publish(event Event) *Reply {
+	var reply *Reply
 
 	handlers, exist := em.handlers[event.Name]
 	if !exist || len(handlers) == 0 {
 		em.logger.Info(fmt.Sprintf("No handlers for event: %s ", event.Name))
 
-		return Reply{}
+		return nil
 	}
 
 	answered := false
@@ -64,7 +64,7 @@ func (em EventManager) Publish(event Event) Reply {
 			chainedHandlers = append(chainedHandlers, handler)
 		} else {
 			r := runHandler(handler, event)
-			if !answered && !r.Empty {
+			if !answered && r != nil && r.Ok {
 				reply = r
 				answered = true
 				log.Printf("event %s was answered with reply %v", event.Name, reply)
@@ -122,7 +122,7 @@ func (em EventManager) sort(eventName string) {
 	})
 }
 
-type Handler func(event Event) Reply
+type Handler func(event Event) *Reply
 type ChainHandler func(accumulated *Event)
 
 type EventHandler struct {
@@ -193,7 +193,7 @@ func (r *Reply) GetAnswer() string {
 	return strAnswer
 }
 
-func runHandler(h EventHandler, e Event) Reply {
+func runHandler(h EventHandler, e Event) *Reply {
 	defer func() {
 		if err := recover(); err != nil {
 			log.Printf("plugin '%s' handler for event '%s' failed: %s", h.PluginName, e.Name, err)

@@ -97,13 +97,13 @@ func choose(quantity int, options []string, r *rand.Rand) string {
 	return choices
 }
 
-func pick(e gofra.Event) gofra.Reply {
+func pick(e gofra.Event) *gofra.Reply {
 
 	argLine := strings.Split(e.MB.Body, " ")
 	if argLine[0] != config.Plugins["Commands"]["commandChar"].(string)+command {
 		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
 			g.Logger.Error(err.Error())
-			return gofra.Reply{}
+			return nil
 		}
 	}
 
@@ -115,10 +115,10 @@ func pick(e gofra.Event) gofra.Reply {
 	if err := g.SendStanza(e.MB.Reply(answer)); err != nil {
 		g.Logger.Error(err.Error())
 
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
-	return gofra.Reply{Ok: true}
+	return &gofra.Reply{Ok: true}
 }
 
 var Plugin plugin

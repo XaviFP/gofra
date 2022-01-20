@@ -62,8 +62,8 @@ func (p plugin) Run() {
 	}
 }
 
-func getOccupants(e gofra.Event) gofra.Reply {
-	return gofra.Reply{Payload: map[string]interface{}{"occupants": occupants}}
+func getOccupants(e gofra.Event) *gofra.Reply {
+	return &gofra.Reply{Payload: map[string]interface{}{"occupants": occupants}}
 }
 
 func prepareMUCs() {
@@ -78,12 +78,12 @@ func prepareMUCs() {
 	}
 }
 
-func handlePresence(e gofra.Event) gofra.Reply {
+func handlePresence(e gofra.Event) *gofra.Reply {
 	pres, ok := e.GetStanza().(stanza.Presence)
 	if !ok {
 		g.Logger.Debug(fmt.Sprintf("Ignoring packet: %T\n", pres))
 
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 
 	occupantNick := ""
@@ -98,12 +98,12 @@ func handlePresence(e gofra.Event) gofra.Reply {
 	if !exists {
 		g.Logger.Error("MUC " + mucJid + " not found in config")
 
-		return gofra.Reply{Ok: false, Empty: true}
+		return &gofra.Reply{Ok: false, Empty: true}
 	}
 
 	if occupantNick == "" {
 
-		return gofra.Reply{Ok: true, Empty: true}
+		return &gofra.Reply{Ok: true, Empty: true}
 	}
 
 	if pres.Type == stanza.UnavailablePresence {
@@ -121,7 +121,7 @@ func handlePresence(e gofra.Event) gofra.Reply {
 
 	if !occupantJoined(mucJid, occupantNick) {
 
-		return gofra.Reply{Ok: true, Empty: true}
+		return &gofra.Reply{Ok: true, Empty: true}
 	}
 
 	g.Publish(
@@ -133,7 +133,7 @@ func handlePresence(e gofra.Event) gofra.Reply {
 			},
 	})
 
-	return gofra.Reply{Ok: true, Empty: true}
+	return &gofra.Reply{Ok: true, Empty: true}
 }
 
 func occupantLeft(room, occupant string) bool{
@@ -171,16 +171,16 @@ func isOccupant(room, occupant string) (int, bool) {
 	return position, position != -1
 }
 
-func joinMUCs(e gofra.Event) gofra.Reply {
+func joinMUCs(e gofra.Event) *gofra.Reply {
 	if len(config.MUCs) == 0 {
 
-		return gofra.Reply{Empty: true}
+		return nil
 	}
 	for _, muc := range config.MUCs {
 		joinMUC(muc)
 	}
 
-	return gofra.Reply{Empty: true}
+	return nil
 }
 
 func joinMUC(mc gofra.MUCConfig) {
