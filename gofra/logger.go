@@ -11,13 +11,13 @@ type LogLevel int
 const (
 	LogLevelError LogLevel = iota
 	LogLevelWarn
-	LogLevelDebug
 	LogLevelInfo
+	LogLevelDebug
 )
 
 type Logger struct {
-	info  *log.Logger
 	debug *log.Logger
+	info  *log.Logger
 	warn  *log.Logger
 	err   *log.Logger
 
@@ -27,14 +27,15 @@ type Logger struct {
 func NewLogger(debug bool) Logger {
 	flags := log.Ldate | log.Ltime | log.Llongfile
 	logger := Logger{
-		info:  log.New(os.Stdout, "INFO ", flags),
 		debug: log.New(io.Discard, "DEBUG ", flags),
+		info:  log.New(os.Stdout, "INFO ", flags),
 		warn:  log.New(os.Stderr, "WARN ", flags),
 		err:   log.New(os.Stderr, "ERROR ", flags),
 	}
 	logger.logLevel = LogLevelInfo
 
 	if debug {
+		logger.logLevel = LogLevelDebug
 		logger.debug.SetOutput(os.Stderr)
 	}
 
