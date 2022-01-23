@@ -9,7 +9,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+
 	"github.com/olebedev/when"
+
 	//"github.com/olebedev/when/rules"
 	"github.com/olebedev/when/rules/common"
 	"github.com/olebedev/when/rules/en"
@@ -60,12 +62,12 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 }
 
 func (p plugin) Run() {
-	g.Logger.Info("Reminder Run method running . . .")
 	fiveSecs := 0
+
 	for {
 		time.Sleep(1 * time.Second) // wait 1 sec
 		fiveSecs++
-		if fiveSecs % 5 == 0 {
+		if fiveSecs == 5 {
 			r := g.Publish(gofra.Event{Name: "muc/getOccupants"})
 			o, ok := r.Payload["occupants"].(map[string][]string)
 			if ok {

@@ -19,4 +19,5 @@ build_test_plugins:
 
 all: build build_plugins
 
-test: build build_test_plugins
+test:
+	go test -p=1 -coverprofile=coverage.out  && go tool cover -html=coverage.out
