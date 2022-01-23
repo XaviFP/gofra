@@ -88,10 +88,7 @@ type task struct {
 	time        time.Time
 }
 
-const commandStr = "st"
-
 var g *gofra.Gofra
-var config gofra.Config
 
 var sessions = make(map[string]session)
 
@@ -105,7 +102,6 @@ func (p plugin) Description() string {
 
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
-	config = c
 	g.Subscribe(
 		"command/st",
 		p.Name(),
@@ -116,19 +112,9 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 }
 
 func handleSession(e gofra.Event) *gofra.Reply {
-	argLine := e.MB.Body
-	args := strings.Split(argLine, " ")
-
-	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
-		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
-			g.Logger.Error(err.Error())
-
-			return nil
-		}
-	}
-
 	//Remove command and leave just the args for it
-	args = args[1:]
+	args := strings.Split(e.MB.Body, " ")[1:]
+
 	s, exists := sessions[e.MB.From.String()]
 	if len(args) < 1 || (len(args) > 0 && args[0] == "") {
 		if !exists || s.status == NoSession {
