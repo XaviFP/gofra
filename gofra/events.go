@@ -72,6 +72,9 @@ func (em EventManager) Publish(event Event) *Reply {
 		}
 	}
 
+	if reply == nil {
+		reply = &Reply{}
+	}
 	reply.EventHandled = true
 
 	if len(chainedHandlers) == 0 {
