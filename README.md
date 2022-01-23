@@ -3,7 +3,7 @@
 
 As of now, the current focus is on text-based commands.
 
-Current design uses a Go plugin-based architechture as it was meant to be able to have it's plugins hot-reloaded (or even replaced or updated).  
+Current design uses a Go plugin-based architecture as it was meant to be able to have it's plugins hot-reloaded (or even replaced or updated).  
 Unfortunately, golang plugin system is far from mature and (at least in this case) adds more complexity than it solves. Plugins need to be compiled against the same version of the binary that is going to use them. Also, testing of binary plugin files cannot be performed. More info on https://github.com/golang/go/issues/27751  
 As a matter of fact, Go 1.17 has a linker error crashing plugins accessing network resources.  
 
