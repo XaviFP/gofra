@@ -5,7 +5,7 @@ As of now, the current focus is on text-based commands.
 
 Current design uses a Go plugin-based architecture as it was meant to be able to have its plugins hot-reloaded (or even replaced or updated).  
 Unfortunately, Go's plugin system is far from mature and (at least in this case) adds more complexity than it solves. Plugins need to be compiled against the same version of the binary that is going to use them. Also, testing of binary plugin files cannot be performed. More info on https://github.com/golang/go/issues/27751  
-As a matter of fact, Go 1.17 has a linker error crashing plugins accessing network resources.  
+[As a matter of fact, Go 1.17 has a linker error crashing plugins accessing network resources.](https://github.com/zoncoen-sample/go1.17-linker-issue)  
 
 So, although it's been a good and fun learning experience your cents are better invested in either going monolithic or using tools like https://github.com/hashicorp/go-plugin instead.   
 In that regard and due to the lack of support for plugin testing, Gofra will surely move away from the current plugin-based architecture.
