@@ -104,14 +104,6 @@ func do(throw throw, r *rand.Rand) string {
 
 func throwDice(e gofra.Event) *gofra.Reply {
 
-	argLine := strings.Split(e.MB.Body, " ")
-	if argLine[0] != config.Plugins["Commands"]["commandChar"].(string)+command {
-		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
-			g.Logger.Error(err.Error())
-			return nil
-		}
-	}
-
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	throws := parseArgs(e.MB.Body)
 
