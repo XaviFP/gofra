@@ -26,13 +26,12 @@ const (
 var sessionStatusses map[sessionStatus]string = map[sessionStatus]string{NoSession: "No Session", Running: "Running", Paused: "Paused", Stopped: "Stopped"}
 
 type session struct {
-	status sessionStatus
-	tasks []task
-	startedAt time.Time
-	duration time.Duration
+	status     sessionStatus
+	tasks      []task
+	startedAt  time.Time
+	duration   time.Duration
 	lastUpdate time.Time
 }
-
 
 func (s *session) update() {
 	if s.status == Running {
@@ -56,7 +55,7 @@ func (s *session) stop() {
 	s.lastUpdate = time.Now()
 }
 
-func (s *session) String() string{
+func (s *session) String() string {
 	r := fmt.Sprintf(
 		"Session status: %s\nStarted at: %v\nCurrent duration: %s\n",
 		sessionStatusses[s.status],
@@ -64,29 +63,29 @@ func (s *session) String() string{
 		s.duration.Round(time.Second),
 	)
 
-	t := []string{"Tasks during session:\n",}
+	t := []string{"Tasks during session:\n"}
 	for i, task := range s.tasks {
-		t = append(t, fmt.Sprintf("%d- %s. Started at: %v\n", i + 1, task.description, task.time))
+		t = append(t, fmt.Sprintf("%d- %s. Started at: %v\n", i+1, task.description, task.time))
 	}
 	return r + strings.Join(t, "")
 }
 
-func (s *session) StoppingString() string{
+func (s *session) StoppingString() string {
 	r := fmt.Sprintf(
 		"Session status: %s\nStarted at: %v\nTotal session duration: %s\n",
 		sessionStatusses[s.status],
 		s.startedAt.Format("2006-Jan-02 03:04:05 PM"),
 		s.duration.Round(time.Second))
-	t := []string{"Tasks during session:\n",}
+	t := []string{"Tasks during session:\n"}
 	for i, task := range s.tasks {
-		t = append(t, fmt.Sprintf("%d- %s. Started at: %v\n", i + 1, task.description, task.time))
+		t = append(t, fmt.Sprintf("%d- %s. Started at: %v\n", i+1, task.description, task.time))
 	}
 	return r + strings.Join(t, "")
 }
 
 type task struct {
 	description string
-	time		time.Time
+	time        time.Time
 }
 
 const commandStr = "st"
@@ -113,7 +112,7 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 		handleSession,
 		0,
 	)
-	
+
 }
 
 func handleSession(e gofra.Event) *gofra.Reply {
@@ -153,10 +152,10 @@ func handleSession(e gofra.Event) *gofra.Reply {
 	if args[0] == "start" {
 		if !exists || s.status == NoSession {
 			sessions[e.MB.From.String()] = session{
-				status: Running,
-				tasks: []task{},
-				startedAt: time.Now(),
-				duration: time.Duration(0),
+				status:     Running,
+				tasks:      []task{},
+				startedAt:  time.Now(),
+				duration:   time.Duration(0),
 				lastUpdate: time.Now(),
 			}
 
@@ -182,7 +181,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 		return &gofra.Reply{Ok: true}
 	}
 
-	switch c := args[0]; c{
+	switch c := args[0]; c {
 	case "pause":
 		if s.status == Paused {
 			if err := g.SendStanza(e.MB.Reply("Session is already paused")); err != nil {
@@ -228,7 +227,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 
 		s.stop()
 		sessions[e.MB.From.String()] = s
-	
+
 		return &gofra.Reply{Ok: true}
 
 	case "add":

@@ -33,7 +33,7 @@ func TestEvents_PublishSubscribeChain(t *testing.T) {
 		"testPlugin",
 		nil,
 		func(e *Event) {
-			e.Payload = map[string]interface{}{"test": testString}			
+			e.Payload = map[string]interface{}{"test": testString}
 		},
 		1,
 	)
@@ -44,7 +44,7 @@ func TestEvents_PublishSubscribeChain(t *testing.T) {
 		func(e *Event) {
 			test, ok := e.Payload["test"].(string)
 			assert.True(t, ok)
-			assert.EqualValues(t, testString, test)	
+			assert.EqualValues(t, testString, test)
 		},
 		0,
 	)

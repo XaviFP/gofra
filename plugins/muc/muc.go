@@ -7,6 +7,7 @@ package main
 import (
 	"fmt"
 	"gofra/gofra"
+	"time"
 
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/muc"
@@ -105,9 +106,9 @@ func handlePresence(e gofra.Event) *gofra.Reply {
 					Name: "muc/occupantLeftMuc",
 					Payload: map[string]interface{}{
 						occupantNick: occupantNick,
-						mucJid: mucJid,
+						mucJid:       mucJid,
 					},
-			})
+				})
 		}
 	}
 
@@ -121,14 +122,14 @@ func handlePresence(e gofra.Event) *gofra.Reply {
 			Name: "muc/occupantJoinedMuc",
 			Payload: map[string]interface{}{
 				occupantNick: occupantNick,
-				mucJid: mucJid,
+				mucJid:       mucJid,
 			},
-	})
+		})
 
 	return &gofra.Reply{Ok: true, Empty: true}
 }
 
-func occupantLeft(room, occupant string) bool{
+func occupantLeft(room, occupant string) bool {
 	position, exists := isOccupant(room, occupant)
 	if !exists {
 

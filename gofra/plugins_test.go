@@ -31,7 +31,7 @@ func TestGetFileNamesInPaths(t *testing.T) {
 
 	for _, rname := range expected {
 		for _, fname := range fileNames {
-				if fname == rname{
+			if fname == rname {
 				actual = append(actual, fname)
 				break
 			}
