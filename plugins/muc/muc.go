@@ -6,7 +6,6 @@ package main
 
 import (
 	"fmt"
-	"time"
 	"gofra/gofra"
 
 	"mellium.im/xmpp/jid"
@@ -55,20 +54,13 @@ func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {
 	g.AddMuxOption(muc.HandleClient(client))
 }
 
-func (p plugin) Run() {
-	for {
-		time.Sleep(10 * time.Second) // wait 1 sec
-		g.Logger.Error(fmt.Sprintf("%v", occupants))
-	}
-}
-
 func getOccupants(e gofra.Event) *gofra.Reply {
 	return &gofra.Reply{Payload: map[string]interface{}{"occupants": occupants}}
 }
 
 func prepareMUCs() {
 	if len(config.MUCs) == 0 {
-		g.Logger.Error(fmt.Sprintf("No MUCs in config: %v", config))
+		g.Logger.Warn(fmt.Sprintf("No MUCs in config: %v", config))
 
 		return
 	}

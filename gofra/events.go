@@ -51,7 +51,7 @@ func (em EventManager) Publish(event Event) *Reply {
 
 	handlers, exist := em.handlers[event.Name]
 	if !exist || len(handlers) == 0 {
-		em.logger.Info(fmt.Sprintf("No handlers for event: %s ", event.Name))
+		em.logger.Debug(fmt.Sprintf("No handlers for event: %s ", event.Name))
 
 		return nil
 	}
@@ -67,7 +67,7 @@ func (em EventManager) Publish(event Event) *Reply {
 			if !answered && r != nil && r.Ok {
 				reply = r
 				answered = true
-				log.Printf("event %s was answered with reply %v", event.Name, reply)
+				em.logger.Debug(fmt.Sprintf("event %s was answered with reply %v", event.Name, reply))
 			}
 		}
 	}

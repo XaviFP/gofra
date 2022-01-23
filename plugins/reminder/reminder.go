@@ -133,13 +133,12 @@ func handleReminder(e gofra.Event) *gofra.Reply {
 
 	t, err := w.Parse(msg.Body, time.Now())
 	if err != nil {
-		g.Logger.Debug(fmt.Sprintf("%v", err))
+		g.Logger.Error(err.Error())
 		if err := g.SendStanza(e.MB.Reply("Couldn't parse date")); err != nil {
 			g.Logger.Error(err.Error())
 			return nil
 		}
 	}
-	g.Logger.Debug(fmt.Sprintf("%v", t))
 
 	answer := ""
 	if msg.Type == stanza.GroupChatMessage {

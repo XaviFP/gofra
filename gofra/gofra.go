@@ -105,13 +105,13 @@ are executed after all non-accumulative ones by descending priority order. Accum
 event values are received through the event pointer argument where changes are expecteted
 to be performed in order for the following chained handlers to recieve them. */
 func (g *Gofra) Subscribe(eventName, pluginName string, handler Handler, priority int) {
-	g.Logger.Info("Plugin " + pluginName + " subscribed handler to event " + eventName)
+	g.Logger.Debug("Plugin " + pluginName + " subscribed handler to event " + eventName)
 	g.em.Subscribe(eventName, pluginName, handler, nil, priority)
 }
 
-// TODO change naming and method comments between Subscribe and SubscribeChain
+// Subscribes a chained event listener to an event
 func (g *Gofra) SubscribeChain(eventName, pluginName string, handler ChainHandler, priority int) {
-	g.Logger.Info("Plugin " + pluginName + " subscribed chained handler to event " + eventName)
+	g.Logger.Debug("Plugin " + pluginName + " subscribed chained handler to event " + eventName)
 	g.em.Subscribe(eventName, pluginName, nil, handler, priority)
 }
 

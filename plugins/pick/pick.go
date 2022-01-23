@@ -54,7 +54,7 @@ func parseArgs(argLine string) (int, []string) {
 		optStart := len(command) + 1 + len(args[0]) + 1
 		optLine = argLine[optStart:]
 	}
-	g.Logger.Error(fmt.Sprintf("%d, %s", quantity, optLine))
+
 	options := []string{}
 	for _, arg := range strings.Split(optLine, ",") {
 
@@ -109,7 +109,6 @@ func pick(e gofra.Event) *gofra.Reply {
 
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	quantity, options := parseArgs(e.MB.Body)
-	g.Logger.Error(fmt.Sprintf("%d, %v", quantity, options))
 	answer := choose(quantity, options, r)
 
 	if err := g.SendStanza(e.MB.Reply(answer)); err != nil {
