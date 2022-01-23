@@ -1,5 +1,5 @@
 # Gofra, an XMPP bot engine 
-[https://ca.wikipedia.org/wiki/Gofra](Gofra) is a tiny XMPP bot engine written in Go.
+[Gofra](https://ca.wikipedia.org/wiki/Gofra) is a tiny XMPP bot engine written in Go.
 
 As of now focuses on text-based commands.
 
