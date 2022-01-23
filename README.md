@@ -71,7 +71,7 @@ type Plugin interface {
   Init(Config, *Gofra)
 }
 ```
-As parameters of the Init method the plugin receives the API object which upon to perform calls, and also the configuration passed in to gofra.  
+As parameters of the Init method the plugin receives the API object which upon to perform calls, and also the configuration passed in to Gofra.  
 
 Aditionally, the Runnable interface can be implemented:
 ```
