@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"github.com/olebedev/when"
-
-	//"github.com/olebedev/when/rules"
 	"github.com/olebedev/when/rules/common"
 	"github.com/olebedev/when/rules/en"
 
@@ -32,10 +30,7 @@ type reminder struct {
 	msgType stanza.MessageType
 }
 
-const commandStr = "remind"
-
 var g *gofra.Gofra
-var config gofra.Config
 var reminders []reminder
 var occupants = make(map[string][]string)
 var w = when.New(nil)
@@ -50,7 +45,6 @@ func (p plugin) Description() string {
 
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
-	config = c
 	g.Subscribe(
 		"command/remind",
 		p.Name(),
@@ -99,22 +93,8 @@ func (p plugin) Run() {
 }
 
 func handleReminder(e gofra.Event) *gofra.Reply {
-	argLine := e.MB.Body
-	args := strings.Split(argLine, " ")
-	/* !remind me tomorrow to buy milk
-	 * !remind [target] [time] message:[message]
-	 * !remind [message]
-	 */
-	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
-		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
-			g.Logger.Error(err.Error())
-
-			return nil
-		}
-	}
-
 	//Remove command and leave just the args for it
-	args = args[1:]
+	args := strings.Split(e.MB.Body, " ")[1:]
 
 	if len(args) < 1 || (len(args) > 0 && args[0] == "") {
 		if err := g.SendStanza(e.MB.Reply("Need a message to remind")); err != nil {
@@ -125,11 +105,6 @@ func handleReminder(e gofra.Event) *gofra.Reply {
 	}
 
 	msg := e.MB
-
-	if msg.Body == "" {
-
-		return nil
-	}
 
 	t, err := w.Parse(msg.Body, time.Now())
 	if err != nil {
