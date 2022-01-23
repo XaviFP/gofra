@@ -49,7 +49,7 @@ func parseArgs(argLine string) (int, []string) {
 	quantity, err := strconv.Atoi(args[0])
 	if err != nil || quantity < 1 {
 		quantity = 1
-		optLine = argLine[len(command) + 1:]
+		optLine = argLine[len(command)+1:]
 	} else {
 		optStart := len(command) + 1 + len(args[0]) + 1
 		optLine = argLine[optStart:]
@@ -87,7 +87,7 @@ func choose(quantity int, options []string, r *rand.Rand) string {
 		choice := r.Intn(len(options))
 		choices += options[choice]
 		options = append(options[:choice], options[choice+1:]...)
-		if i < quantity -2 {
+		if i < quantity-2 {
 			choices += ","
 		}
 		choices += " "

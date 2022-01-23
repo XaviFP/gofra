@@ -45,7 +45,7 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 		0,
 	)
 	dd, exists := config.Plugins["Dice"]["defaultDice"].(int)
-	if exists && defaultDice != dd && dd >= 2  {
+	if exists && defaultDice != dd && dd >= 2 {
 		defaultDice = config.Plugins["Dice"]["defaultDice"].(int)
 	}
 }
@@ -95,9 +95,9 @@ func do(throw throw, r *rand.Rand) string {
 	results := fmt.Sprintf("%dd%d: ", throw.quantity, throw.faces)
 
 	for i := 0; i < throw.quantity-1; i++ {
-		results += fmt.Sprintf("%d, ", r.Intn(throw.faces) + 1)
+		results += fmt.Sprintf("%d, ", r.Intn(throw.faces)+1)
 	}
-	results += fmt.Sprintf("%d", r.Intn(throw.faces) + 1)
+	results += fmt.Sprintf("%d", r.Intn(throw.faces)+1)
 
 	return results
 }

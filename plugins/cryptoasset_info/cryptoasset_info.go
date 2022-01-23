@@ -6,22 +6,22 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"gofra/gofra"
 )
 
+var Plugin plugin
+
 type plugin struct{}
 
-const commandStr = "assetinfo"
 const metadataPrefix = "https://api.cryptowat.ch/assets/"
 const metadataSufix = "/metadata"
 const defaultAsset = "btc"
 
 var g *gofra.Gofra
-var config gofra.Config
 
 func (p plugin) Name() string {
 	return "CryptoAssetInfo"
@@ -33,7 +33,7 @@ func (p plugin) Description() string {
 
 func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
-	config = conf
+
 	g.Subscribe(
 		"command/assetinfo",
 		p.Name(),
@@ -43,89 +43,86 @@ func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {
 }
 
 func handleAssetInfo(e gofra.Event) *gofra.Reply {
-	asset := defaultAsset
-	argLine := e.MB.Body
-	args := strings.Split(argLine, " ")
-	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+commandStr {
-		if err := g.SendStanza(e.MB.Reply("Wrong command")); err != nil {
+	var asset string
+
+	r := &gofra.Reply{Ok: true}
+	args := strings.Split(e.MB.Body, " ")[1:]
+	argLength := len(args)
+
+	switch {
+	case argLength > 1:
+		if err := g.SendStanza(e.MB.Reply("Too many arguments")); err != nil {
+			g.Logger.Error(err.Error())
+		}
+
+		return r
+	case argLength == 1:
+		asset = args[0]
+	default:
+		asset = defaultAsset
+	}
+
+	resp, err := http.Get(metadataPrefix + asset + metadataSufix)
+	if err != nil {
+		g.Logger.Error(err.Error())
+		if err := g.SendStanza(e.MB.Reply(fmt.Sprintf("Could not retrieve asset info: %s", err.Error()))); err != nil {
 			g.Logger.Error(err.Error())
 
-			return nil
 		}
-	}
-	//Remove command and leave just the args for it
-	args = args[1:]
-	if argLine != "" {
-		if len(args) > 1 {
-			//return "Too many arguments"
-		} else if len(args) == 1 {
-			asset = args[0]
-		}
-	}
-	resp, err := http.Get(metadataPrefix + asset + metadataSufix)
 
-	if err != nil {
-		log.Println(err)
+		return r
 	}
 	defer resp.Body.Close()
 
-	r := &gofra.Reply{Ok: true}
-
 	if resp.StatusCode != http.StatusOK {
-		if err := g.SendStanza(e.MB.Reply("Something went wrong")); err != nil {
+		errMsg := fmt.Sprintf("Could not retrieve asset info. Status code: %d", resp.StatusCode)
+		if err := g.SendStanza(e.MB.Reply(errMsg)); err != nil {
 			g.Logger.Error(err.Error())
-
-			return r
 		}
+
+		return r
 	}
 
-	var result map[string]interface{}
-	log.Println(resp.Body)
+	var result map[string]map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		if err := g.SendStanza(e.MB.Reply("Invalid response")); err != nil {
+		if err := g.SendStanza(e.MB.Reply(fmt.Sprintf("Could not decode response: %s", err.Error()))); err != nil {
 			g.Logger.Error(err.Error())
-
-			return r
 		}
+
+		return r
 	}
 
-	aux := result["result"]
-	resultMap := aux.(map[string]interface{})
-	payload, ok := resultMap[asset]
+	payload, ok := result["result"][asset]
 	if !ok {
 		if err := g.SendStanza(e.MB.Reply("Asset not found")); err != nil {
 			g.Logger.Error(err.Error())
-
-			return r
 		}
+
+		return r
 	}
 
-	payloadMap := payload.(map[string]interface{})
-	description, ok := payloadMap["AssetDescription"]
+	assetData := payload.(map[string]interface{})
+	description, ok := assetData["AssetDescription"]
 	if !ok {
 		if err := g.SendStanza(e.MB.Reply("No description for " + asset + " yet")); err != nil {
 			g.Logger.Error(err.Error())
-
-			return r
 		}
+
+		return r
 	}
 
-	descriptionString := description.(string)
-	if descriptionString == "" {
+	descriptionStr := description.(string)
+	if descriptionStr == "" {
 		if err := g.SendStanza(e.MB.Reply("No description for " + asset + " yet")); err != nil {
 			g.Logger.Error(err.Error())
-
-			return r
 		}
+
+		return r
 	}
 
-	log.Println(result)
-
-	if err := g.SendStanza(e.MB.Reply(descriptionString)); err != nil {
+	if err := g.SendStanza(e.MB.Reply(descriptionStr)); err != nil {
 		g.Logger.Error(err.Error())
 	}
 
 	return r
 }
-
-var Plugin plugin

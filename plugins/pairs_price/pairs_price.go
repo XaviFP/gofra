@@ -6,7 +6,7 @@ package main
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,16 +14,16 @@ import (
 	"gofra/gofra"
 )
 
+var Plugin plugin
+
 type plugin struct{}
 
-const command = "price"
 const metadataPrefix = "https://api.cryptowat.ch/markets/"
 const metadataSufix = "/price"
 const defaultExchange = "kraken"
 const defaultPair = "btcusd"
 
 var g *gofra.Gofra
-var config gofra.Config
 
 func (p plugin) Name() string {
 	return "Price"
@@ -35,7 +35,7 @@ func (p plugin) Description() string {
 
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
-	config = c
+
 	g.Subscribe(
 		"command/price",
 		p.Name(),
@@ -45,81 +45,75 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 }
 
 func handlePrice(e gofra.Event) *gofra.Reply {
-	exchange := defaultExchange
-	pair := defaultPair
-	argLine := e.MB.Body
-	args := strings.Split(argLine, " ")
-	if args[0] != config.Plugins["Commands"]["commandChar"].(string)+command {
+	var exchange, pair string
+
+	r := &gofra.Reply{Ok: true}
+	args := strings.Split(e.MB.Body, " ")[1:]
+	argLength := len(args)
+
+	switch {
+	case argLength > 2:
 		if err := g.SendStanza(e.MB.Reply("Too many arguments")); err != nil {
 			g.Logger.Error(err.Error())
-			return nil
 		}
+
+		return r
+	case argLength == 2:
+		exchange = args[1]
+		pair = args[0]
+	case argLength == 1:
+		exchange = defaultExchange
+		pair = args[0]
+	default:
+		exchange = defaultExchange
+		pair = defaultPair
 	}
-
-	//Remove command and leave just the args for it
-	args = args[1:]
-	if argLine != "" {
-		if len(args) > 2 {
-			if err := g.SendStanza(e.MB.Reply("Too many arguments")); err != nil {
-				g.Logger.Error(err.Error())
-
-				return nil
-			}
-
-			return &gofra.Reply{Ok: true}
-		} else if len(args) == 2 {
-			pair = args[0]
-			exchange = args[1]
-		} else if len(args) == 1 && args[0] != "" {
-			pair = args[0]
-		}
-	}
-	requestUrl := metadataPrefix + exchange + "/" + pair + metadataSufix
-	log.Println(requestUrl)
 
 	resp, err := http.Get(metadataPrefix + exchange + "/" + pair + metadataSufix)
-
 	if err != nil {
-		log.Println(err)
+		g.Logger.Error(err.Error())
+		if err := g.SendStanza(e.MB.Reply(fmt.Sprintf("Could not retrieve asset price: %s", err.Error()))); err != nil {
+			g.Logger.Error(err.Error())
+		}
+
+		return r
 	}
 	defer resp.Body.Close()
-	log.Println(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		return nil
+		errMsg := fmt.Sprintf("Could not retrieve asset price. Status code: %d", resp.StatusCode)
+		if err := g.SendStanza(e.MB.Reply(errMsg)); err != nil {
+			g.Logger.Error(err.Error())
+		}
+
+		return r
 	}
 
-	var result map[string]interface{}
+	var result map[string]map[string]interface{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil
+		if err := g.SendStanza(e.MB.Reply(fmt.Sprintf("Could not decode response: %s", err.Error()))); err != nil {
+			g.Logger.Error(err.Error())
+		}
+
+		return r
 	}
 
-	aux := result["result"]
-	resultMap := aux.(map[string]interface{})
-	priceField, ok := resultMap["price"]
+	priceField, ok := result["result"]["price"]
 	if !ok {
 		if err := g.SendStanza(e.MB.Reply("Price for pair not found")); err != nil {
 			g.Logger.Error(err.Error())
-
-			return nil
 		}
 
-		return &gofra.Reply{Ok: true}
+		return r
 	}
 
 	priceFloat := priceField.(float64)
 	price := strconv.FormatFloat(priceFloat, 'f', -1, 64)
 
-	log.Println(price)
-
-	if err := g.SendStanza(e.MB.Reply(price)); err != nil {
+	if err := g.SendStanza(e.MB.Reply(fmt.Sprintf("%s: %s", pair, price))); err != nil {
 		g.Logger.Error(err.Error())
-
-		return nil
 	}
 
-	return &gofra.Reply{Ok: true}
+	return r
 }
-
-var Plugin plugin

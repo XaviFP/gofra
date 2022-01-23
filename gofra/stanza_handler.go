@@ -19,7 +19,7 @@ func (mb MessageBody) Reply(body string) MessageBody {
 	reply := mb
 	reply.Body = body
 	if mb.Type == stanza.GroupChatMessage {
-		reply.To, reply.From = mb.From.Bare(), jid.MustParse(mb.From.Bare().String() + "/" + mucNicks[mb.From.Bare().String()])
+		reply.To, reply.From = mb.From.Bare(), jid.MustParse(mb.From.Bare().String()+"/"+mucNicks[mb.From.Bare().String()])
 
 		return reply
 	}
