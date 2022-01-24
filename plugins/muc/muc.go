@@ -90,9 +90,8 @@ func handlePresence(e gofra.Event) *gofra.Reply {
 	_, exists := occupants[mucJid]
 
 	if !exists {
-		g.Logger.Error("MUC " + mucJid + " not found in config")
 
-		return &gofra.Reply{Ok: false, Empty: true}
+		return nil
 	}
 
 	if occupantNick == "" {
