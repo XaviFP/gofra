@@ -92,11 +92,11 @@ The following list covers the current available events published by Gofra and it
 
 ### Engine events list
 
-- Connected
-- Initialized
-- MessageReceived
-- PresenceReceived
-- EventSubscribed
+- connected
+- initialized
+- messageReceived
+- presenceReceived
+- eventSubscribed
 
 ### Available plugin event list
 
