@@ -8,6 +8,8 @@ import (
 	"gofra/gofra"
 )
 
+var Plugin plugin
+
 type plugin struct{}
 
 func (p plugin) Name() string {
@@ -22,4 +24,3 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	// Yeah, business as usual
 }
 
-var Plugin plugin

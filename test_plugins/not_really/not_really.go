@@ -4,6 +4,8 @@ notReally is almost a test gofra plugin but not really.
 
 package main
 
+var Plugin plugin
+
 type plugin struct{}
 
 func (p plugin) Name() string {
@@ -18,4 +20,3 @@ func (p plugin) Description() string {
 func (p plugin) Init() {
 }
 
-var Plugin plugin

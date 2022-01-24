@@ -8,6 +8,8 @@ import (
 	"gofra/gofra"
 )
 
+var Plugin plugin
+
 type plugin struct{}
 
 func (p plugin) Name() string {
@@ -36,4 +38,3 @@ func naughtyCrash(e gofra.Event) *gofra.Reply {
 	panic("naughtyCrash")
 }
 
-var Plugin plugin
