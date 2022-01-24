@@ -7,6 +7,7 @@ type Config struct {
 	Nick        string                            `yaml:"nick"`
 	LogXML      bool                              `yaml:"logXML"`
 	Debug       bool                              `yaml:"debug"`
+	SkipSRV     bool                              `yaml:"skipSRV"`
 	MUCs        []MUCConfig                       `yaml:"mucs"`
 	Plugins     map[string]map[string]interface{} `yaml:"plugins"`
 }
