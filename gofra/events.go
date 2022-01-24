@@ -172,7 +172,7 @@ type Reply struct {
 // 	answer strign
 // }
 
-// Data access interface for text-based commands to answer to a suitable message.
+// Data access interface for text-based commands to answer a suitable message.
 func (r *Reply) SetAnswer(answer string) {
 	if r.Payload == nil {
 		r.Payload = make(map[string]interface{})

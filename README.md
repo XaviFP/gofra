@@ -100,6 +100,8 @@ The following list covers the current available events published by Gofra and it
 
 ### Available plugin event list
 
-- Command/commandName
-- JoinedMuc
-- LeftMuc
+- command/commandName
+- muc/joinedRoom
+- muc/getOccupants
+- muc/occupantLeftMuc
+- muc/occupantJoinedMuc
