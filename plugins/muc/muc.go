@@ -6,11 +6,12 @@ package main
 
 import (
 	"fmt"
-	"gofra/gofra"
 
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/muc"
 	"mellium.im/xmpp/stanza"
+
+	"gofra/gofra"
 )
 
 var Plugin plugin

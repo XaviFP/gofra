@@ -13,7 +13,6 @@ import (
 	"github.com/olebedev/when"
 	"github.com/olebedev/when/rules/common"
 	"github.com/olebedev/when/rules/en"
-
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/stanza"
 

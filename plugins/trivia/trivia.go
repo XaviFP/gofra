@@ -7,10 +7,9 @@ import (
 	"strings"
 
 	"github.com/juju/errors"
+	"mellium.im/xmpp/stanza"
 
 	"gofra/gofra"
-
-	"mellium.im/xmpp/stanza"
 )
 
 var Plugin plugin
@@ -18,7 +17,6 @@ var Plugin plugin
 var errNoRounds = errors.New("no rounds available")
 
 var g *gofra.Gofra
-var config gofra.Config
 var session *gameSession
 var repo repository
 
@@ -33,7 +31,6 @@ func (p plugin) Description() string {
 }
 
 func (p plugin) Init(conf gofra.Config, api *gofra.Gofra) {
-	config = conf
 	g = api
 	g.Subscribe(
 		"messageReceived",
