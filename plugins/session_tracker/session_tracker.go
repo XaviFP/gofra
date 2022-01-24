@@ -5,7 +5,6 @@ session_tracker is a gofra plugin that allows users to keep track of tasks done 
 package main
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -14,85 +13,9 @@ import (
 
 var Plugin plugin
 
-type plugin struct{}
-
-type sessionStatus int
-
-const (
-	NoSession sessionStatus = iota
-	Running
-	Paused
-	Stopped
-)
-
-var sessionStatusses map[sessionStatus]string = map[sessionStatus]string{NoSession: "No Session", Running: "Running", Paused: "Paused", Stopped: "Stopped"}
-
-type session struct {
-	status     sessionStatus
-	tasks      []task
-	startedAt  time.Time
-	duration   time.Duration
-	lastUpdate time.Time
-}
-
-func (s *session) update() {
-	if s.status == Running {
-		s.duration += time.Since(s.lastUpdate)
-	}
-	s.lastUpdate = time.Now()
-}
-
-func (s *session) pause() {
-	s.update()
-	s.status = Paused
-}
-
-func (s *session) resume() {
-	s.status = Running
-	s.lastUpdate = time.Now()
-}
-
-func (s *session) stop() {
-	s.status = NoSession
-	s.lastUpdate = time.Now()
-}
-
-func (s *session) String() string {
-	r := fmt.Sprintf(
-		"Session status: %s\nStarted at: %v\nCurrent duration: %s\n",
-		sessionStatusses[s.status],
-		s.startedAt.Format("2006-Jan-02 03:04:05 PM"),
-		s.duration.Round(time.Second),
-	)
-
-	t := []string{"Tasks during session:\n"}
-	for i, task := range s.tasks {
-		t = append(t, fmt.Sprintf("%d- %s. Started at: %v\n", i+1, task.description, task.time))
-	}
-	return r + strings.Join(t, "")
-}
-
-func (s *session) StoppingString() string {
-	r := fmt.Sprintf(
-		"Session status: %s\nStarted at: %v\nTotal session duration: %s\n",
-		sessionStatusses[s.status],
-		s.startedAt.Format("2006-Jan-02 03:04:05 PM"),
-		s.duration.Round(time.Second))
-	t := []string{"Tasks during session:\n"}
-	for i, task := range s.tasks {
-		t = append(t, fmt.Sprintf("%d- %s. Started at: %v\n", i+1, task.description, task.time))
-	}
-	return r + strings.Join(t, "")
-}
-
-type task struct {
-	description string
-	time        time.Time
-}
-
 var g *gofra.Gofra
 
-var sessions = make(map[string]session)
+type plugin struct{}
 
 func (p plugin) Name() string {
 	return "SessionTracker"
@@ -110,21 +33,19 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 		handleSession,
 		0,
 	)
-
 }
 
 func handleSession(e gofra.Event) *gofra.Reply {
-	//Remove command and leave just the args for it
 	args := strings.Split(e.MB.Body, " ")[1:]
 
 	s, exists := sessions[e.MB.From.String()]
-	if len(args) < 1 || (len(args) > 0 && args[0] == "") {
+	if len(args) < 1 {
 		if !exists || s.status == NoSession {
 			if err := g.SendStanza(e.MB.Reply("You don't have an ongoing session")); err != nil {
 				g.Logger.Error(err.Error())
 			}
 
-			return nil
+			return &gofra.Reply{Ok: true}
 		}
 
 		s.update()
@@ -137,31 +58,9 @@ func handleSession(e gofra.Event) *gofra.Reply {
 		return &gofra.Reply{Ok: true}
 	}
 
-	if args[0] == "start" {
-		if !exists || s.status == NoSession {
-			sessions[e.MB.From.String()] = session{
-				status:     Running,
-				tasks:      []task{},
-				startedAt:  time.Now(),
-				duration:   time.Duration(0),
-				lastUpdate: time.Now(),
-			}
+	command := args[0]
 
-			if err := g.SendStanza(e.MB.Reply("Session started!")); err != nil {
-				g.Logger.Error(err.Error())
-			}
-
-			return &gofra.Reply{Ok: true}
-		}
-
-		if err := g.SendStanza(e.MB.Reply("You already have an ongoing session")); err != nil {
-			g.Logger.Error(err.Error())
-		}
-
-		return &gofra.Reply{Ok: true}
-	}
-
-	if !exists || s.status == NoSession {
+	if (!exists || s.status == NoSession) && command != "start" {
 		if err := g.SendStanza(e.MB.Reply("You don't have an ongoing session")); err != nil {
 			g.Logger.Error(err.Error())
 		}
@@ -169,7 +68,28 @@ func handleSession(e gofra.Event) *gofra.Reply {
 		return &gofra.Reply{Ok: true}
 	}
 
-	switch c := args[0]; c {
+	switch args[0] {
+	case "start":
+		if s.status != NoSession {
+			if err := g.SendStanza(e.MB.Reply("You already have an ongoing session")); err != nil {
+				g.Logger.Error(err.Error())
+			}
+		}
+
+		sessions[e.MB.From.String()] = session{
+			status:     Running,
+			tasks:      []task{},
+			startedAt:  time.Now(),
+			duration:   time.Duration(0),
+			lastUpdate: time.Now(),
+		}
+
+		if err := g.SendStanza(e.MB.Reply("Session started!")); err != nil {
+			g.Logger.Error(err.Error())
+		}
+
+		return &gofra.Reply{Ok: true}
+
 	case "pause":
 		if s.status == Paused {
 			if err := g.SendStanza(e.MB.Reply("Session is already paused")); err != nil {
@@ -209,7 +129,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 	case "stop":
 		s.update()
 		s.status = Stopped
-		if err := g.SendStanza(e.MB.Reply(s.StoppingString())); err != nil {
+		if err := g.SendStanza(e.MB.Reply(s.String())); err != nil {
 			g.Logger.Error(err.Error())
 		}
 
@@ -223,6 +143,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 		session := sessions[e.MB.From.String()]
 		session.tasks = append(session.tasks, task{description: description, time: time.Now()})
 		sessions[e.MB.From.String()] = session
+
 		if err := g.SendStanza(e.MB.Reply("Task added")); err != nil {
 			g.Logger.Error(err.Error())
 		}
@@ -234,7 +155,6 @@ func handleSession(e gofra.Event) *gofra.Reply {
 			g.Logger.Error(err.Error())
 		}
 
-		return nil
+		return &gofra.Reply{Ok: true}
 	}
-
 }

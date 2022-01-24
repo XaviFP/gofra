@@ -16,14 +16,14 @@ import (
 
 var Plugin plugin
 
-type plugin struct{}
-
 const metadataPrefix = "https://api.cryptowat.ch/markets/"
 const metadataSufix = "/price"
 const defaultExchange = "kraken"
 const defaultPair = "btcusd"
 
 var g *gofra.Gofra
+
+type plugin struct{}
 
 func (p plugin) Name() string {
 	return "Price"

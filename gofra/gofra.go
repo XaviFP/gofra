@@ -88,7 +88,15 @@ func (g *Gofra) SendMessage(to, body string, msgType stanza.MessageType) error {
 	if err != nil {
 		return err
 	}
-	msg := MessageBody{Message: stanza.Message{Type: msgType, To: j.Bare()}, Body: body}
+
+	msg := MessageBody{
+		Message: stanza.Message{
+			Type: msgType,
+			To:   j.Bare(),
+		},
+		Body: body,
+	}
+
 	return g.Client.Encode(g.Context, msg)
 }
 

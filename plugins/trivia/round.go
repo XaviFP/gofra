@@ -60,7 +60,9 @@ func (r *round) randomize() {
 	answers := append(r.IncorrectAnswers, r.CorrectAnswer)
 
 	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(answers), func(i, j int) { answers[i], answers[j] = answers[j], answers[i] })
+	rand.Shuffle(len(answers), func(i, j int) {
+		answers[i], answers[j] = answers[j], answers[i]
+	})
 
 	r.answers = make(map[string]string)
 	r.answers["A"] = answers[0]

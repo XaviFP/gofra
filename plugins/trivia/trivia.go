@@ -2,12 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
 	"github.com/juju/errors"
-	"mellium.im/xmpp/stanza"
 
 	"gofra/gofra"
 )
@@ -62,41 +60,42 @@ func StartNewSession(req roundRequest) error {
 }
 
 func handleCommand(e gofra.Event) *gofra.Reply {
-	msg, ok := e.GetStanza().(gofra.MessageBody)
-	if !ok {
-		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", e.GetStanza())
+	args := strings.Split(e.MB.Body, " ")[1:]
+	r := e.MB.Reply
+
+	if len(args) == 0 {
+		g.SendStanza(r(`Use "!trivia start" to start a new game`))
+
 		return nil
 	}
-
-	args := strings.Split(e.MB.Body, " ")[1:]
 
 	switch args[0] {
 	case "start":
 		if len(args) == 1 {
 			if !session.started || session.finished {
 				if err := StartNewSession(roundRequest{categories: []int{}, limit: 10}); err != nil {
-					g.SendStanza(msg.Reply(fmt.Sprintf("Could not start new session: %s", "a")))
+					g.SendStanza(r(fmt.Sprintf("Could not start new session: %s", "a")))
 				}
 
-				g.SendStanza(msg.Reply(session.current.String()))
+				g.SendStanza(r(session.current.String()))
 			}
 
 		} else {
 			categoryID, err := strconv.Atoi(args[1])
 			if err != nil {
-				g.SendStanza(msg.Reply("invalid category id"))
+				g.SendStanza(r("invalid category id"))
 
 				return nil
 			}
 
 			StartNewSession(roundRequest{categories: []int{categoryID}, limit: 10})
-			g.SendStanza(msg.Reply(session.current.String()))
+			g.SendStanza(r(session.current.String()))
 		}
 
 	case "categories":
 		res, err := repo.GetCategories()
 		if err != nil {
-			g.SendStanza(msg.Reply(
+			g.SendStanza(r(
 				fmt.Sprintf("could not retrieve categories: %s", err),
 			))
 
@@ -108,33 +107,20 @@ func handleCommand(e gofra.Event) *gofra.Reply {
 			categories = fmt.Sprintf("%s%d: %s\n", categories, c.ID, c.Name)
 		}
 
-		g.SendStanza(msg.Reply(categories))
+		g.SendStanza(r(categories))
 	}
 
 	return nil
 }
 
 func handleMessage(e gofra.Event) *gofra.Reply {
-	msg, ok := e.GetStanza().(gofra.MessageBody)
-	if !ok {
-		_, _ = fmt.Fprintf(os.Stdout, "Ignoring packet: %T\n", e.GetStanza())
-		return nil
-	}
-
-	if msg.Type != stanza.GroupChatMessage {
-		return nil
-	}
-
-	if msg.Body == "" {
-		return nil
-	}
-
-	nextQuestion, ok := processRound(msg.From.Resourcepart(), msg.Body)
+	nextQuestion, ok := processRound(e.MB.From.Resourcepart(), e.MB.Body)
 	if !ok {
 		return nil
 	}
 
-	g.SendStanza(msg.Reply(nextQuestion))
+	g.SendStanza(e.MB.Reply(nextQuestion))
+
 	return nil
 }
 

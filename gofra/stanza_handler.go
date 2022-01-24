@@ -18,8 +18,15 @@ type MessageBody struct {
 func (mb MessageBody) Reply(body string) MessageBody {
 	reply := mb
 	reply.Body = body
+
 	if mb.Type == stanza.GroupChatMessage {
-		reply.To, reply.From = mb.From.Bare(), jid.MustParse(mb.From.Bare().String()+"/"+mucNicks[mb.From.Bare().String()])
+		reply.To, reply.From = mb.From.Bare(), jid.MustParse(
+			fmt.Sprintf(
+				"%s/%s",
+				mb.From.Bare().String(),           // JID
+				mucNicks[mb.From.Bare().String()], // Nickname
+			),
+		)
 
 		return reply
 	}
@@ -38,26 +45,27 @@ func (h stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEn
 	h.logger.Debug(fmt.Sprintf("Message received: %v", msg))
 
 	d := xml.NewTokenDecoder(t)
-	msgStruct := MessageBody{}
-	err := d.Decode(&msgStruct)
+	mb := MessageBody{}
+	err := d.Decode(&mb)
 
 	if err != nil && err != io.EOF {
 		h.logger.Error(fmt.Sprintf("Error decoding message: %q", err))
 		return nil
 	}
 
-	if msgStruct.Body == "" || msgStruct.Type != stanza.ChatMessage {
+	if mb.Body == "" || mb.Type != stanza.ChatMessage {
 		h.logger.Debug("Message received has no body")
 	}
 
-	h.logger.Debug(fmt.Sprintf("Message received: %v, with body: %q", msgStruct, msgStruct.Body))
+	h.logger.Debug(fmt.Sprintf("Message received: %v, with body: %q", mb, mb.Body))
 
 	e := Event{
 		Name:    "messageReceived",
 		Payload: make(map[string]interface{}),
+		MB:      mb,
 	}
 
-	e.SetStanza(msgStruct)
+	e.SetStanza(mb)
 
 	defer func() {
 		go h.publish(e)
