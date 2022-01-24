@@ -37,4 +37,3 @@ func (p plugin) Run() {
 func naughtyCrash(e gofra.Event) *gofra.Reply {
 	panic("naughtyCrash")
 }
-

@@ -23,4 +23,3 @@ func (p plugin) Description() string {
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	// Yeah, business as usual
 }
-

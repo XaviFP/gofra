@@ -19,4 +19,3 @@ func (p plugin) Description() string {
 // "My Init() signature is off for a plugin :S"
 func (p plugin) Init() {
 }
-

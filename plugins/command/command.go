@@ -17,6 +17,7 @@ var Plugin plugin
 type plugin struct{}
 
 var commandChar = "!"
+
 const name = "Commands"
 
 var g *gofra.Gofra
