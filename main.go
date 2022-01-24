@@ -8,15 +8,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-
 	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
 
-	"gofra/gofra"
-
 	"gopkg.in/yaml.v3"
+
+	"gofra/gofra"
 )
 
 var config gofra.Config
@@ -57,6 +56,7 @@ func main() {
 	}()
 
 	g = gofra.NewGofra(ctx, config)
+
 	defer func() {
 		g.Logger.Info("Closing conn…")
 		if err := g.Client.Conn().Close(); err != nil {
@@ -65,13 +65,11 @@ func main() {
 	}()
 
 	go func() {
-		select {
-		case <-ctx.Done():
-			g.Logger.Info("Closing session…")
+		<-ctx.Done()
+		g.Logger.Info("Closing session…")
 
-			if err := g.Client.Close(); err != nil {
-				g.Logger.Error(fmt.Sprintf("Error closing session: %q", err))
-			}
+		if err := g.Client.Close(); err != nil {
+			g.Logger.Error(fmt.Sprintf("Error closing session: %q", err))
 		}
 	}()
 
