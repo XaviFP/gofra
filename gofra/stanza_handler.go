@@ -50,6 +50,7 @@ func (h stanzaHandler) HandleMessage(msg stanza.Message, t xmlstream.TokenReadEn
 
 	if err != nil && err != io.EOF {
 		h.logger.Error(fmt.Sprintf("Error decoding message: %q", err))
+
 		return nil
 	}
 

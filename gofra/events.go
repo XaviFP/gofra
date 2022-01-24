@@ -175,6 +175,7 @@ func (r *Reply) SetAnswer(answer string) {
 	if r.Payload == nil {
 		r.Payload = make(map[string]interface{})
 	}
+
 	r.Payload["answer"] = answer
 }
 
@@ -183,14 +184,17 @@ func (r *Reply) GetAnswer() string {
 	if r.Payload == nil {
 		r.Payload = make(map[string]interface{})
 	}
+
 	answer, exists := r.Payload["answer"]
 	if !exists {
 		return ""
 	}
+
 	strAnswer, ok := answer.(string)
 	if !ok {
 		return ""
 	}
+
 	return strAnswer
 }
 

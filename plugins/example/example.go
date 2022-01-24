@@ -28,6 +28,7 @@ func (p plugin) Description() string {
 func (p plugin) Init(conf gofra.Config, api *gofra.Gofra) {
 	g = api
 	config = conf
+
 	g.Subscribe(
 		"exampleEvent",
 		p.Name(),
@@ -50,6 +51,7 @@ func handleExampleEvent(e gofra.Event) *gofra.Reply {
 	if reply.Empty {
 		r := &gofra.Reply{Empty: true}
 		r.Ok = reply.Ok
+
 		return r
 	}
 

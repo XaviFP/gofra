@@ -79,6 +79,7 @@ func isPlugin(fileName string) (Plugin, bool) {
 	goPlugin, err := plugin.Open(fileName)
 	if err != nil {
 		log.Println(err)
+
 		return nil, false
 	}
 
@@ -86,6 +87,7 @@ func isPlugin(fileName string) (Plugin, bool) {
 	symPlugin, err := goPlugin.Lookup("Plugin")
 	if err != nil {
 		log.Println(err)
+
 		return nil, false
 	}
 
@@ -93,6 +95,7 @@ func isPlugin(fileName string) (Plugin, bool) {
 	p, ok := symPlugin.(Plugin)
 	if !ok {
 		log.Printf("unexpected type from module symbol in file %s", fileName)
+
 		return nil, false
 	}
 
@@ -108,6 +111,7 @@ func (p Plugins) loadAll(config Config, gofra *Gofra) error {
 	for _, f := range fileList {
 		p.load(f, config, gofra)
 	}
+
 	return nil
 }
 
@@ -115,6 +119,7 @@ func (p Plugins) load(fileName string, config Config, gofra *Gofra) bool {
 	plugin, ok := isPlugin(fileName)
 	if !ok {
 		log.Printf("file %s does not contain a plugin", fileName)
+
 		return false
 	}
 

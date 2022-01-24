@@ -19,5 +19,5 @@ build_test_plugins:
 
 all: build build_plugins
 
-test:
-	go test -p=1 -coverprofile=coverage.out  && go tool cover -html=coverage.out
+test: build_test_plugins
+	go test -p=1 -coverprofile=coverage.out gofra/*.go && go tool cover -html=coverage.out
