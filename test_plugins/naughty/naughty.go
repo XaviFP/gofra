@@ -27,6 +27,7 @@ func (p plugin) Init(c gofra.Config, api gofra.API) {
 		naughtyCrash,
 		0,
 	)
+
 	panic("naughtyInitCrash")
 }
 

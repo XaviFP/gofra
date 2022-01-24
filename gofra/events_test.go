@@ -151,14 +151,14 @@ func TestEvents_GetStanza(t *testing.T) {
 	assert.EqualValues(t, testMessageBody.Body, "Hello body")
 }
 
-func TestReplySetAnswer(t *testing.T) {
+func TestReply_SetAnswer(t *testing.T) {
 	r := Reply{}
 
 	r.SetAnswer("testStr")
 	assert.Equal(t, "testStr", r.Payload["answer"])
 }
 
-func TestReplyGetAnswer(t *testing.T) {
+func TestReply_GetAnswer(t *testing.T) {
 	r := Reply{}
 
 	answer := r.GetAnswer()
@@ -168,5 +168,9 @@ func TestReplyGetAnswer(t *testing.T) {
 
 	r.Payload["answer"] = 25
 	answer = r.GetAnswer()
-	assert.Equal(t, "25", answer)
+	assert.Empty(t, answer)
+
+	r.Payload["answer"] = "testStr"
+	answer = r.GetAnswer()
+	assert.Equal(t, "testStr", answer)
 }
