@@ -6,17 +6,17 @@ package main
 
 import (
 	"fmt"
-	"gofra/gofra"
-	"log"
 	"os"
 	"strings"
+
+	"gofra/gofra"
 )
 
 var Plugin plugin
 
 type plugin struct{}
 
-const defaultCommandChar = "!"
+var commandChar = "!"
 const name = "Commands"
 
 var g *gofra.Gofra
@@ -37,21 +37,28 @@ func (p plugin) Init(config gofra.Config, gofra *gofra.Gofra) {
 		"messageReceived",
 		p.Name(),
 		handleMessage,
-		9999,
+		1,
 	)
 	checkConfig(c)
 }
 
 func checkConfig(config gofra.Config) {
-	log.Print(config)
 	pluginConfig, exists := config.Plugins[name]
 	if !exists {
-		config.Plugins[name] = map[string]interface{}{"commandChar": defaultCommandChar}
+		g.Logger.Warn("No config for plugin Commands")
+
+		return
 	}
-	commandChar, exists := pluginConfig["commandChar"]
-	if !exists || commandChar.(string) == "" {
-		config.Plugins[name]["commandChar"] = defaultCommandChar
+
+	char, exists := pluginConfig["commandChar"]
+	cChar, ok := char.(string)
+	if !exists || !ok || cChar == "" {
+		g.Logger.Warn("No config for plugin Commands")
+
+		return
 	}
+
+	commandChar = cChar
 }
 
 func handleMessage(e gofra.Event) *gofra.Reply {
@@ -66,14 +73,11 @@ func handleMessage(e gofra.Event) *gofra.Reply {
 	}
 
 	command := ""
-	if !strings.HasPrefix(msg.Body, c.Plugins[name]["commandChar"].(string)) {
+	if !strings.HasPrefix(msg.Body, commandChar) {
 		return nil
 	}
 
 	command = strings.Split(msg.Body, " ")[0][1:]
-	// msgType := msg.Type
-	// to := msg.From
-
 	eventName := "command/" + command
 
 	event := gofra.Event{Name: eventName, MB: msg, Payload: e.Payload}
