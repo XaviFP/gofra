@@ -14,6 +14,8 @@ import (
 	"gofra/gofra"
 )
 
+var Plugin plugin
+
 type plugin struct{}
 
 const command = "pick"
@@ -119,5 +121,3 @@ func pick(e gofra.Event) *gofra.Reply {
 
 	return &gofra.Reply{Ok: true}
 }
-
-var Plugin plugin

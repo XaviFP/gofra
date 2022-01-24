@@ -12,6 +12,8 @@ import (
 	"gofra/gofra"
 )
 
+var Plugin plugin
+
 type plugin struct{}
 
 type sessionStatus int
@@ -236,5 +238,3 @@ func handleSession(e gofra.Event) *gofra.Reply {
 	}
 
 }
-
-var Plugin plugin

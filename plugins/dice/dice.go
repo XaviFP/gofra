@@ -14,6 +14,8 @@ import (
 	"gofra/gofra"
 )
 
+var Plugin plugin
+
 type plugin struct{}
 
 type throw struct {
@@ -128,5 +130,3 @@ func throwDice(e gofra.Event) *gofra.Reply {
 
 	return &gofra.Reply{Ok: true}
 }
-
-var Plugin plugin

@@ -20,6 +20,8 @@ import (
 	"gofra/gofra"
 )
 
+var Plugin plugin
+
 type plugin struct{}
 
 type reminder struct {
@@ -162,5 +164,3 @@ func pop(reminders []reminder) ([]reminder, reminder) {
 
 	return reminders[1:], reminders[0]
 }
-
-var Plugin plugin

@@ -10,7 +10,9 @@ import (
 	"gofra/gofra"
 )
 
-type plugin string
+var Plugin plugin
+
+type plugin struct{}
 
 var g *gofra.Gofra
 var config gofra.Config
@@ -58,5 +60,3 @@ func handleExampleEvent(e gofra.Event) *gofra.Reply {
 	// return a reply
 	return &gofra.Reply{Ok: true, Payload: data}
 }
-
-var Plugin plugin

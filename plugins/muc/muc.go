@@ -7,12 +7,13 @@ package main
 import (
 	"fmt"
 	"gofra/gofra"
-	"time"
 
 	"mellium.im/xmpp/jid"
 	"mellium.im/xmpp/muc"
 	"mellium.im/xmpp/stanza"
 )
+
+var Plugin plugin
 
 type plugin struct{}
 
@@ -214,5 +215,3 @@ func joinMUC(mc gofra.MUCConfig) {
 		g.Publish(e)
 	}()
 }
-
-var Plugin plugin

@@ -12,6 +12,8 @@ import (
 	"strings"
 )
 
+var Plugin plugin
+
 type plugin struct{}
 
 const defaultCommandChar = "!"
@@ -79,5 +81,3 @@ func handleMessage(e gofra.Event) *gofra.Reply {
 
 	return reply
 }
-
-var Plugin plugin
