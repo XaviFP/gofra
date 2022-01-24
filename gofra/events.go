@@ -6,6 +6,16 @@ import (
 	"sort"
 )
 
+type Handler func(event Event) *Reply
+type ChainHandler func(accumulated *Event)
+
+type EventHandler struct {
+	Handler    Handler
+	Priority   int
+	PluginName string
+	Chain      ChainHandler
+}
+
 type EventManager struct {
 	handlers map[string][]EventHandler
 	logger   Logger
@@ -75,6 +85,7 @@ func (em EventManager) Publish(event Event) *Reply {
 	if reply == nil {
 		reply = &Reply{}
 	}
+
 	reply.EventHandled = true
 
 	if len(chainedHandlers) == 0 {
@@ -95,13 +106,16 @@ func (em EventManager) SetPriority(eventName, pluginName string, priority int) e
 	if !exist {
 		return fmt.Errorf("event %s not found", eventName)
 	}
+
 	for i, element := range em.handlers[eventName] {
 		if element.PluginName == pluginName {
 			pluginFound = true
+
 			if element.Priority != priority {
 				em.handlers[eventName][i].Priority = priority
 				priorityChanged = true
 			}
+
 			break
 		}
 	}
@@ -123,16 +137,6 @@ func (em EventManager) sort(eventName string) {
 	sort.Slice(em.handlers[eventName], func(i, j int) bool {
 		return em.handlers[eventName][i].Priority > em.handlers[eventName][j].Priority
 	})
-}
-
-type Handler func(event Event) *Reply
-type ChainHandler func(accumulated *Event)
-
-type EventHandler struct {
-	Handler    Handler
-	Priority   int
-	PluginName string
-	Chain      ChainHandler
 }
 
 type Event struct {
@@ -165,12 +169,6 @@ type Reply struct {
 	Empty        bool
 	EventHandled bool
 }
-
-// Example
-// type BetweenPlugins struc{
-// 	isEventHandledBySomone bool
-// 	answer strign
-// }
 
 // Data access interface for text-based commands to answer a suitable message.
 func (r *Reply) SetAnswer(answer string) {

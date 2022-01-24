@@ -27,12 +27,12 @@ type Logger struct {
 func NewLogger(debug bool) Logger {
 	flags := log.Ldate | log.Ltime | log.Llongfile
 	logger := Logger{
-		debug: log.New(io.Discard, "DEBUG ", flags),
-		info:  log.New(os.Stdout, "INFO ", flags),
-		warn:  log.New(os.Stderr, "WARN ", flags),
-		err:   log.New(os.Stderr, "ERROR ", flags),
+		debug:    log.New(io.Discard, "DEBUG ", flags),
+		info:     log.New(os.Stdout, "INFO ", flags),
+		warn:     log.New(os.Stderr, "WARN ", flags),
+		err:      log.New(os.Stderr, "ERROR ", flags),
+		logLevel: LogLevelInfo,
 	}
-	logger.logLevel = LogLevelInfo
 
 	if debug {
 		logger.logLevel = LogLevelDebug

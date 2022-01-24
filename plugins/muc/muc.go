@@ -109,12 +109,21 @@ func handlePresence(e gofra.Event) *gofra.Reply {
 						occupantNick: occupantNick,
 						mucJid:       mucJid,
 					},
-				})
+				},
+			)
+
+			g.Publish(
+				gofra.Event{
+					Name: "muc/occupants",
+					Payload: map[string]interface{}{
+						"occupants": occupants,
+					},
+				},
+			)
 		}
 	}
 
 	if !occupantJoined(mucJid, occupantNick) {
-
 		return &gofra.Reply{Ok: true, Empty: true}
 	}
 
@@ -125,7 +134,17 @@ func handlePresence(e gofra.Event) *gofra.Reply {
 				occupantNick: occupantNick,
 				mucJid:       mucJid,
 			},
-		})
+		},
+	)
+
+	g.Publish(
+		gofra.Event{
+			Name: "muc/occupants",
+			Payload: map[string]interface{}{
+				"occupants": occupants,
+			},
+		},
+	)
 
 	return &gofra.Reply{Ok: true, Empty: true}
 }
@@ -145,9 +164,9 @@ func occupantLeft(room, occupant string) bool {
 func occupantJoined(room, occupant string) bool {
 	_, exists := isOccupant(room, occupant)
 	if exists {
-
 		return false
 	}
+
 	occupants[room] = append(occupants[room], occupant)
 
 	return true
@@ -167,9 +186,9 @@ func isOccupant(room, occupant string) (int, bool) {
 
 func joinMUCs(e gofra.Event) *gofra.Reply {
 	if len(config.MUCs) == 0 {
-
 		return nil
 	}
+
 	for _, muc := range config.MUCs {
 		joinMUC(muc)
 	}
@@ -180,9 +199,9 @@ func joinMUCs(e gofra.Event) *gofra.Reply {
 func joinMUC(mc gofra.MUCConfig) {
 	g.Logger.Debug("Tried to join room: " + mc.Jid)
 	j := jid.MustParse(mc.Jid + "/" + mc.Nick)
+
 	_, exists := mucs[mc.Jid]
 	if exists {
-
 		return
 	}
 

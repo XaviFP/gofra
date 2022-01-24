@@ -85,6 +85,7 @@ func chainPanicHandler(e *Event) {
 
 func TestEvents_NoHandlersPublish(t *testing.T) {
 	em := NewEventManager(Logger{})
+
 	r := em.Publish(Event{Name: "testEvent"})
 	assert.False(t, r.EventHandled)
 }
@@ -133,6 +134,7 @@ func TestEvents_Setpriority(t *testing.T) {
 func TestEvents_SetStanza(t *testing.T) {
 	e := Event{}
 	e.SetStanza(MessageBody{Body: "Hello body"})
+
 	testMessageBody, ok := e.Payload["stanza"].(MessageBody)
 	assert.True(t, ok)
 	assert.EqualValues(t, testMessageBody.Body, "Hello body")
@@ -141,8 +143,30 @@ func TestEvents_SetStanza(t *testing.T) {
 func TestEvents_GetStanza(t *testing.T) {
 	e := Event{}
 	assert.Nil(t, e.GetStanza())
+
 	e.SetStanza(MessageBody{Body: "Hello body"})
+
 	testMessageBody, ok := e.GetStanza().(MessageBody)
 	assert.True(t, ok)
 	assert.EqualValues(t, testMessageBody.Body, "Hello body")
+}
+
+func TestReplySetAnswer(t *testing.T) {
+	r := Reply{}
+
+	r.SetAnswer("testStr")
+	assert.Equal(t, "testStr", r.Payload["answer"])
+}
+
+func TestReplyGetAnswer(t *testing.T) {
+	r := Reply{}
+
+	answer := r.GetAnswer()
+	_, exists := r.Payload["answer"]
+	assert.False(t, exists)
+	assert.Empty(t, answer)
+
+	r.Payload["answer"] = 25
+	answer = r.GetAnswer()
+	assert.Equal(t, "25", answer)
 }

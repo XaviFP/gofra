@@ -16,18 +16,16 @@ import (
 
 var Plugin plugin
 
-type plugin struct{}
+var g *gofra.Gofra
+var config gofra.Config
+var defaultDice = 6
 
 type throw struct {
 	quantity int
 	faces    int
 }
 
-const command = "dice"
-
-var g *gofra.Gofra
-var config gofra.Config
-var defaultDice = 6
+type plugin struct{}
 
 func (p plugin) Name() string {
 	return "Dice"
@@ -40,25 +38,50 @@ func (p plugin) Description() string {
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
 	config = c
+
 	g.Subscribe(
 		"command/dice",
 		p.Name(),
-		throwDice,
+		handleCommand,
 		0,
 	)
+
 	dd, exists := config.Plugins["Dice"]["defaultDice"].(int)
 	if exists && defaultDice != dd && dd >= 2 {
 		defaultDice = config.Plugins["Dice"]["defaultDice"].(int)
 	}
 }
 
+func handleCommand(e gofra.Event) *gofra.Reply {
+	throws := parseArgs(e.MB.Body)
+
+	if len(throws) == 0 {
+		if err := g.SendStanza(e.MB.Reply("Need dice information to throw")); err != nil {
+			g.Logger.Error(err.Error())
+
+			return nil
+		}
+	}
+
+	answer := ""
+	for _, throw := range throws {
+		answer += do(throw) + "\n"
+	}
+
+	if err := g.SendStanza(e.MB.Reply(answer)); err != nil {
+		g.Logger.Error(err.Error())
+
+		return nil
+	}
+
+	return &gofra.Reply{Ok: true}
+}
+
 func parseArgs(argLine string) []throw {
-	args := strings.Split(argLine, " ")
-	//Remove command and leave just the args for it
-	args = args[1:]
+	args := strings.Split(argLine, " ")[1:]
+
 	throws := []throw{}
 	for _, arg := range args {
-
 		if arg == "" {
 			continue
 		}
@@ -66,6 +89,7 @@ func parseArgs(argLine string) []throw {
 		number, err := strconv.Atoi(arg)
 		if err == nil {
 			throws = append(throws, throw{quantity: number, faces: defaultDice})
+
 			continue
 		}
 
@@ -93,40 +117,13 @@ func parseArgs(argLine string) []throw {
 	return throws
 }
 
-func do(throw throw, r *rand.Rand) string {
+func do(throw throw) string {
 	results := fmt.Sprintf("%dd%d: ", throw.quantity, throw.faces)
 
 	for i := 0; i < throw.quantity-1; i++ {
-		results += fmt.Sprintf("%d, ", r.Intn(throw.faces)+1)
-	}
-	results += fmt.Sprintf("%d", r.Intn(throw.faces)+1)
-
-	return results
-}
-
-func throwDice(e gofra.Event) *gofra.Reply {
-
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	throws := parseArgs(e.MB.Body)
-
-	if len(throws) == 0 {
-		if err := g.SendStanza(e.MB.Reply("Need dice information to throw")); err != nil {
-			g.Logger.Error(err.Error())
-
-			return nil
-		}
+		rand.Seed(time.Now().UnixNano())
+		results += fmt.Sprintf("%d, ", rand.Intn(throw.faces)+1)
 	}
 
-	answer := ""
-	for _, throw := range throws {
-		answer += do(throw, r) + "\n"
-	}
-
-	if err := g.SendStanza(e.MB.Reply(answer)); err != nil {
-		g.Logger.Error(err.Error())
-
-		return nil
-	}
-
-	return &gofra.Reply{Ok: true}
+	return fmt.Sprintf("%s%d", results, rand.Intn(throw.faces)+1)
 }
