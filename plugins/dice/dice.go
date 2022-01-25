@@ -74,7 +74,7 @@ func handleCommand(e gofra.Event) *gofra.Reply {
 		return nil
 	}
 
-	return &gofra.Reply{Ok: true}
+	return nil
 }
 
 func parseArgs(argLine string) []throw {

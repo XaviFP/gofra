@@ -141,13 +141,13 @@ func handleReminder(e gofra.Event) *gofra.Reply {
 		g.Logger.Error(err.Error())
 	}
 
-	return &gofra.Reply{Ok: true}
+	return nil
 }
 
 func handleOccupants(e gofra.Event) *gofra.Reply {
 	occupants = e.Payload["occupants"].(map[string][]string)
 
-	return &gofra.Reply{Ok: true}
+	return nil
 }
 
 func isOccupant(room, occupant string) (int, bool) {

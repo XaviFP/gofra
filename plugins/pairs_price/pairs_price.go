@@ -47,7 +47,7 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 func handlePrice(e gofra.Event) *gofra.Reply {
 	var exchange, pair string
 
-	r := &gofra.Reply{Ok: true}
+	var r *gofra.Reply
 	args := strings.Split(e.MB.Body, " ")[1:]
 	argLength := len(args)
 

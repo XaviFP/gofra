@@ -65,14 +65,18 @@ func TestEvents_PublishSubscribeChain(t *testing.T) {
 		0,
 	)
 	r := em.Publish(Event{Name: "testEvent1"})
-	assert.True(t, r.EventHandled)
+	assert.Nil(t, r)
 
 	r = em.Publish(Event{Name: "testEvent2"})
-	assert.True(t, r.EventHandled)
+	assert.Nil(t, r)
 }
 
 func exampleHandler(e Event) *Reply {
 	return nil
+}
+
+func nonNilHandler(e Event) *Reply {
+	return &Reply{Payload: map[string]interface{}{"eventReceived": e}}
 }
 
 func panicHandler(e Event) *Reply {
@@ -83,11 +87,26 @@ func chainPanicHandler(e *Event) {
 	panic("Panic on purpose")
 }
 
-func TestEvents_NoHandlersPublish(t *testing.T) {
+func TestEvents_ChooseReplyWithValueOverNil(t *testing.T) {
 	em := NewEventManager(Logger{})
+	em.Subscribe(
+		"testEvent",
+		"testPlugin1",
+		exampleHandler,
+		nil,
+		1,
+	)
 
+	em.Subscribe(
+		"testEvent",
+		"testPlugin2",
+		nonNilHandler,
+		nil,
+		0,
+	)
 	r := em.Publish(Event{Name: "testEvent"})
-	assert.False(t, r.EventHandled)
+	event := r.Payload["eventReceived"].(Event)
+	assert.Equal(t, event.Name, "testEvent")
 }
 
 func TestEvents_Setpriority(t *testing.T) {

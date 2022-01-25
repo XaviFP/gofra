@@ -66,7 +66,6 @@ func (em EventManager) Publish(event Event) *Reply {
 		return nil
 	}
 
-	answered := false
 	chainedHandlers := []EventHandler{}
 
 	for _, handler := range handlers {
@@ -74,22 +73,11 @@ func (em EventManager) Publish(event Event) *Reply {
 			chainedHandlers = append(chainedHandlers, handler)
 		} else {
 			r := runHandler(handler, event)
-			if !answered && r != nil && r.Ok {
+			if reply == nil && r != nil {
 				reply = r
-				answered = true
 				em.logger.Debug(fmt.Sprintf("event %s was answered with reply %v", event.Name, reply))
 			}
 		}
-	}
-
-	if reply == nil {
-		reply = &Reply{}
-	}
-
-	reply.EventHandled = true
-
-	if len(chainedHandlers) == 0 {
-		return reply
 	}
 
 	for _, handler := range chainedHandlers {
@@ -165,9 +153,6 @@ func (e *Event) GetStanza() interface{} {
 
 type Reply struct {
 	Payload      map[string]interface{}
-	Ok           bool
-	Empty        bool
-	EventHandled bool
 }
 
 // Data access interface for text-based commands to answer a suitable message.

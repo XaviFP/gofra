@@ -45,7 +45,7 @@ func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {
 func handleAssetInfo(e gofra.Event) *gofra.Reply {
 	var asset string
 
-	r := &gofra.Reply{Ok: true}
+	var r *gofra.Reply
 	args := strings.Split(e.MB.Body, " ")[1:]
 	argLength := len(args)
 
