@@ -103,5 +103,6 @@ The following list covers the current available events published by Gofra and it
 - command/commandName
 - muc/joinedRoom
 - muc/getOccupants
-- muc/occupantLeftMuc
 - muc/occupantJoinedMuc
+- muc/occupantLeftMuc
+- muc/occupants
