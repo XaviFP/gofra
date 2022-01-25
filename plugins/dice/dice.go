@@ -18,7 +18,8 @@ var Plugin plugin
 
 var g *gofra.Gofra
 var config gofra.Config
-var defaultDice = 6
+var defaultDiceFaces = 6
+var defaultDiceQuantity = 1
 
 type throw struct {
 	quantity int
@@ -46,23 +47,19 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 		0,
 	)
 
-	dd, exists := config.Plugins["Dice"]["defaultDice"].(int)
-	if exists && defaultDice != dd && dd >= 2 {
-		defaultDice = config.Plugins["Dice"]["defaultDice"].(int)
+	df, exists := config.Plugins["Dice"]["faces"].(int)
+	if exists && defaultDiceFaces != df && df >= 2 {
+		defaultDiceFaces = config.Plugins["Dice"]["faces"].(int)
 	}
+	dq, exists := config.Plugins["Dice"]["quantity"].(int)
+	if exists && defaultDiceQuantity != dq && dq >= 1 {
+		defaultDiceQuantity = config.Plugins["Dice"]["quantity"].(int)
+	}
+
 }
 
 func handleCommand(e gofra.Event) *gofra.Reply {
 	throws := parseArgs(e.MB.Body)
-
-	if len(throws) == 0 {
-		if err := g.SendStanza(e.MB.Reply("Need dice information to throw")); err != nil {
-			g.Logger.Error(err.Error())
-
-			return nil
-		}
-	}
-
 	answer := ""
 	for _, throw := range throws {
 		answer += do(throw) + "\n"
@@ -80,15 +77,19 @@ func handleCommand(e gofra.Event) *gofra.Reply {
 func parseArgs(argLine string) []throw {
 	args := strings.Split(argLine, " ")[1:]
 
+	if len(args) == 0 {
+		return []throw{{quantity: defaultDiceQuantity, faces: defaultDiceFaces}}
+	}
+
 	throws := []throw{}
 	for _, arg := range args {
 		if arg == "" {
-			continue
+			throws = append(throws, throw{quantity: defaultDiceQuantity, faces: defaultDiceFaces})
 		}
 
 		number, err := strconv.Atoi(arg)
 		if err == nil {
-			throws = append(throws, throw{quantity: number, faces: defaultDice})
+			throws = append(throws, throw{quantity: number, faces: defaultDiceFaces})
 
 			continue
 		}
