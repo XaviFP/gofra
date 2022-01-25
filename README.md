@@ -83,7 +83,7 @@ The Run method is ran as a goroutine and is meant for plugins that require some 
 As an example of this, the reminder plugin implements the Runnable interface to provide time-based reminders.
 Other uses can be serving a webpage to display data gathered from Gofra or serving an API to manage Gofra through HTTP, for example.
 
-An easy way to get a grasp is to copy the example plugin template and build from there.
+An easy way to get a grasp is to see how other plugins work and build from there.
 
 ## Events
 
