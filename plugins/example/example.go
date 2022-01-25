@@ -5,6 +5,7 @@ example is a gofra plugin that serves as a template to create new plugins.
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"gofra/gofra"
@@ -48,17 +49,14 @@ func handleExampleEvent(e gofra.Event) *gofra.Reply {
 			Name: "newExampleEvent",
 		})
 	// if reply is empty return
-	if reply.Empty {
-		r := &gofra.Reply{Empty: true}
-		r.Ok = reply.Ok
-
-		return r
+	if reply == nil {
+		return reply
 	}
 
 	// get reply's content and work with it
 	data = reply.Payload
-	log.Println(data)
+	g.Logger.Info(fmt.Sprintf("%v", data))
 
 	// return a reply
-	return &gofra.Reply{Ok: true, Payload: data}
+	return &gofra.Reply{Payload: data}
 }

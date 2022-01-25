@@ -104,5 +104,5 @@ func pick(e gofra.Event) *gofra.Reply {
 		return nil
 	}
 
-	return &gofra.Reply{Ok: true}
+	return nil
 }

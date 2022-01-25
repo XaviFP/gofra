@@ -45,7 +45,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 				g.Logger.Error(err.Error())
 			}
 
-			return &gofra.Reply{Ok: true}
+			return nil
 		}
 
 		s.update()
@@ -55,7 +55,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 			g.Logger.Error(err.Error())
 		}
 
-		return &gofra.Reply{Ok: true}
+		return nil
 	}
 
 	command := args[0]
@@ -65,7 +65,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 			g.Logger.Error(err.Error())
 		}
 
-		return &gofra.Reply{Ok: true}
+		return nil
 	}
 
 	switch args[0] {
@@ -88,7 +88,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 			g.Logger.Error(err.Error())
 		}
 
-		return &gofra.Reply{Ok: true}
+		return nil
 
 	case "pause":
 		if s.status == Paused {
@@ -96,7 +96,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 				g.Logger.Error(err.Error())
 			}
 
-			return &gofra.Reply{Ok: true}
+			return nil
 		}
 
 		s.pause()
@@ -106,7 +106,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 			g.Logger.Error(err.Error())
 		}
 
-		return &gofra.Reply{Ok: true}
+		return nil
 
 	case "resume":
 		if s.status == Running {
@@ -114,7 +114,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 				g.Logger.Error(err.Error())
 			}
 
-			return &gofra.Reply{Ok: true}
+			return nil
 		}
 
 		s.resume()
@@ -124,7 +124,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 			g.Logger.Error(err.Error())
 		}
 
-		return &gofra.Reply{Ok: true}
+		return nil
 
 	case "stop":
 		s.update()
@@ -136,7 +136,7 @@ func handleSession(e gofra.Event) *gofra.Reply {
 		s.stop()
 		sessions[e.MB.From.String()] = s
 
-		return &gofra.Reply{Ok: true}
+		return nil
 
 	case "add":
 		description := strings.Join(args[1:], " ")
@@ -148,13 +148,13 @@ func handleSession(e gofra.Event) *gofra.Reply {
 			g.Logger.Error(err.Error())
 		}
 
-		return &gofra.Reply{Ok: true}
+		return nil
 
 	default:
 		if err := g.SendStanza(e.MB.Reply("Session tracker subcommand not recognized.\nTry with start, pause, resume or stop")); err != nil {
 			g.Logger.Error(err.Error())
 		}
 
-		return &gofra.Reply{Ok: true}
+		return nil
 	}
 }

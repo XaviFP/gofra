@@ -97,7 +97,7 @@ func handlePresence(e gofra.Event) *gofra.Reply {
 
 	if occupantNick == "" {
 
-		return &gofra.Reply{Ok: true, Empty: true}
+		return nil
 	}
 
 	if pres.Type == stanza.UnavailablePresence {
@@ -124,7 +124,7 @@ func handlePresence(e gofra.Event) *gofra.Reply {
 	}
 
 	if !occupantJoined(mucJid, occupantNick) {
-		return &gofra.Reply{Ok: true, Empty: true}
+		return nil
 	}
 
 	g.Publish(
@@ -146,7 +146,7 @@ func handlePresence(e gofra.Event) *gofra.Reply {
 		},
 	)
 
-	return &gofra.Reply{Ok: true, Empty: true}
+	return nil
 }
 
 func occupantLeft(room, occupant string) bool {
