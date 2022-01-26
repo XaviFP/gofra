@@ -106,3 +106,89 @@ The following list covers the current available events published by Gofra and it
 - muc/occupantJoinedMuc
 - muc/occupantLeftMuc
 - muc/occupants
+
+
+## Commands usage
+
+### assetinfo
+User: !assetinfo btc
+Gofra: Bitcoin is a peer-to-peer electronic cash system that allows participants to digitally transfer units of bitcoin without a trusted intermediary. Bitcoin combines a public transaction ledger (blockchain), a decentralized currency issuance algorithm (proof-of-work mining), and a transaction verification system (transaction script). Bitcoin has a supply cap of 21 million bitcoin, 95% of which will be mined by the year 2025. Bitcoin relies on Nakamoto consensus, or consensus implied by the longest blockchain that has accumulated the most computational effort. 
+
+### price
+User: !price btcusd  
+Gofra: btcusd: 37567  
+
+User: !price btceur  
+Gofra: btceur: 33314.3  
+
+### remind
+User: !remind me call the mechanic in one second  
+Gofra: Reminder added  
+Gofra: User, call the mechanic   
+
+### pick
+User: !pick Tokyo, Osaka, Kyoto  
+Gofra: Chose: Osaka  
+
+User: !pick 2 Strawberry, Chocolate, Vanilla, Caramel  
+Gofra: Chose: Caramel and Vanilla  
+
+### dice
+User: !dice   
+Gofra: 1d6: 6
+
+User: !dice 3d20  
+Gofra: 3d20: 17, 6, 16
+
+### trivia
+User: !trivia categories  
+Gofra: 
+9: General Knowledge
+16: Entertainment: Board Games
+17: Science & Nature
+18: Science: Computers
+.
+.
+.
+  
+  
+User: !trivia start 18  
+Gofra: Science: Computers
+easy
+RAM stands for Random Access Memory.
+A) False
+B) True  
+
+User: B
+
+Gofra: Science: Computers
+medium
+Which coding language was the #1 programming language in terms of usage on GitHub in 2015?
+A) PHP
+B) JavaScript
+C) C#
+D) Python  
+.
+.
+.
+
+
+### st (session tracker)
+User: !st start
+Gofra: Session started!
+
+User: !st add reviewing code
+Gofra: Task added
+
+User: !st add very important meeting
+Gofra: Task added
+
+User: !st stop
+Gofra: Session status: Stopped
+
+Started at: 2022-Jan-26 08:28:17 AM
+Duration: 1m18s
+Tasks during session:
+1- reviewing code. Started at: 2022-Jan-26 08:28:49 AM
+2- very important meeting. Started at: 2022-Jan-26 08:29:21 AM
+
