@@ -1,0 +1,21 @@
+jid: "account@server.tld"
+password: "m0r3,S3cur3,Th4n1234."
+nick: "Gofra"
+debug: true
+logXML: true
+skipSRV: false
+pluginPaths:
+  - "bin/plugins/"
+
+mucs:
+  - mucNick: "Gofra"
+    mucJoinHistory: 0
+    mucJid: "mucJid@mucService.server.tld"
+    mucPassword: "open,sesame"
+
+plugins:
+  Commands:
+    commandChar: "!"
+  Dice:
+    faces: 6
+    quantity: 1
