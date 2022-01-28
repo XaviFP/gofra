@@ -46,7 +46,7 @@ func handleAssetInfo(e gofra.Event) *gofra.Reply {
 	var asset string
 
 	var r *gofra.Reply
-	args := strings.Split(e.MB.Body, " ")[1:]
+	args := strings.Fields(e.MB.Body)[1:]
 	argLength := len(args)
 
 	switch {
