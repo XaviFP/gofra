@@ -75,7 +75,7 @@ func handleCommand(e gofra.Event) *gofra.Reply {
 }
 
 func parseArgs(argLine string) []throw {
-	args := strings.Split(argLine, " ")[1:]
+	args := strings.Fields(argLine)[1:]
 
 	if len(args) == 0 {
 		return []throw{{quantity: defaultDiceQuantity, faces: defaultDiceFaces}}

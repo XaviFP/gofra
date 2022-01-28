@@ -60,7 +60,7 @@ func StartNewSession(req roundRequest) error {
 }
 
 func handleCommand(e gofra.Event) *gofra.Reply {
-	args := strings.Split(e.MB.Body, " ")[1:]
+	args := strings.Fields(e.MB.Body)[1:]
 	r := e.MB.Reply
 
 	if len(args) == 0 {

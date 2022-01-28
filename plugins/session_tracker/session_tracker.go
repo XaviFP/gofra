@@ -36,7 +36,7 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 }
 
 func handleSession(e gofra.Event) *gofra.Reply {
-	args := strings.Split(e.MB.Body, " ")[1:]
+	args := strings.Fields(e.MB.Body)[1:]
 
 	s, exists := sessions[e.MB.From.String()]
 	if len(args) < 1 {

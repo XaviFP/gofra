@@ -70,7 +70,7 @@ func handleMessage(e gofra.Event) *gofra.Reply {
 		return nil
 	}
 
-	command = strings.Split(e.MB.Body, " ")[0][1:]
+	command = strings.Fields(e.MB.Body)[0][1:]
 	eventName := "command/" + command
 
 	event := gofra.Event{

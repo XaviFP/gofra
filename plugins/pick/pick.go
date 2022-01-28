@@ -39,7 +39,7 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 }
 
 func parseArgs(argLine string) (int, []string) {
-	args := strings.Split(argLine, " ")
+	args := strings.Fields(argLine)
 	command := args[0]
 	optLine := ""
 

@@ -91,7 +91,7 @@ func (p plugin) Run() {
 
 func handleReminder(e gofra.Event) *gofra.Reply {
 	msg := e.MB
-	args := strings.Split(msg.Body, " ")[1:]
+	args := strings.Fields(msg.Body)[1:]
 
 	if len(args) < 1 || (len(args) > 0 && args[0] == "") {
 		if err := g.SendStanza(e.MB.Reply("Need a message to remind")); err != nil {
