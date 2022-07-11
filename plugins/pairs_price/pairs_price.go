@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gofra/gofra"
+	"github.com/XaviFP/gofra/gofra"
 )
 
 var Plugin plugin

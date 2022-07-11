@@ -1,4 +1,4 @@
-module gofra
+module github.com/XaviFP/gofra
 
 go 1.16
 

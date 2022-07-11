@@ -5,7 +5,7 @@ normie is a gofra plugin.
 package main
 
 import (
-	"gofra/gofra"
+	"github.com/XaviFP/gofra/gofra"
 )
 
 var Plugin plugin
