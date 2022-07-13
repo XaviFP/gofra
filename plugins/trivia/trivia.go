@@ -7,7 +7,7 @@ import (
 
 	"github.com/juju/errors"
 
-	"gofra/gofra"
+	"github.com/XaviFP/gofra/gofra"
 )
 
 var Plugin plugin

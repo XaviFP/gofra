@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"gofra/gofra"
+	"github.com/XaviFP/gofra/gofra"
 )
 
 var Plugin plugin

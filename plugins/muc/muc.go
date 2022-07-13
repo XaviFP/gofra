@@ -11,7 +11,7 @@ import (
 	"mellium.im/xmpp/muc"
 	"mellium.im/xmpp/stanza"
 
-	"gofra/gofra"
+	"github.com/XaviFP/gofra/gofra"
 )
 
 var Plugin plugin

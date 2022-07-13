@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"gofra/gofra"
+	"github.com/XaviFP/gofra/gofra"
 )
 
 var Plugin plugin

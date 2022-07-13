@@ -5,7 +5,7 @@ naughty is a test gofra plugin that tries to crash gofra through panicking handl
 package main
 
 import (
-	"gofra/gofra"
+	"github.com/XaviFP/gofra/gofra"
 )
 
 var Plugin plugin
