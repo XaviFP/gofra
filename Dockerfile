@@ -1,4 +1,4 @@
-FROM golang:1.19.3-alpine3.16
+FROM golang:1.20.2-alpine3.17
 
 WORKDIR /src
 COPY ./go.mod ./go.sum ./
