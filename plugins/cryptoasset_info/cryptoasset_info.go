@@ -24,11 +24,17 @@ const defaultAsset = "btc"
 var g *gofra.Gofra
 
 func (p plugin) Name() string {
-	return "CryptoAssetInfo"
+	return "assetInfo"
 }
 
 func (p plugin) Description() string {
 	return "Provides a brief description of crypto assets"
+}
+
+func (p plugin) Help() string {
+	reply := g.Publish(gofra.Event{Name: "command/getCommandChar", MB: gofra.MessageBody{}, Payload: nil})
+	commandChar := reply.GetAnswer()
+	return fmt.Sprintf("Usage: %sassetinfo btc", commandChar)
 }
 
 func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {

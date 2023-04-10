@@ -27,6 +27,16 @@ func (p plugin) Description() string {
 	return "Makes it easy to create text-based plugin commands"
 }
 
+func (p plugin) Help() string {
+	return "Commands is a meta-plugin and does not expose user-triggered interaction"
+}
+
+func getCommandChar(e gofra.Event) *gofra.Reply {
+	reply := &gofra.Reply{}
+	reply.SetAnswer(commandChar)
+	return reply
+}
+
 func (p plugin) Init(config gofra.Config, gofra *gofra.Gofra) {
 	c = config
 	g = gofra
@@ -38,6 +48,13 @@ func (p plugin) Init(config gofra.Config, gofra *gofra.Gofra) {
 		p.Name(),
 		handleMessage,
 		1,
+	)
+
+	g.Subscribe(
+		"command/getCommandChar",
+		p.Name(),
+		getCommandChar,
+		0,
 	)
 }
 

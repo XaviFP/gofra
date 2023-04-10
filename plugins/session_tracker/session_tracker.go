@@ -5,6 +5,7 @@ session_tracker is a gofra plugin that allows users to keep track of tasks done 
 package main
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -23,6 +24,12 @@ func (p plugin) Name() string {
 
 func (p plugin) Description() string {
 	return "Keeps track of tasks done in a working session"
+}
+
+func (p plugin) Help() string {
+	reply := g.Publish(gofra.Event{Name: "command/getCommandChar", MB: gofra.MessageBody{}, Payload: nil})
+	commandChar := reply.GetAnswer()
+	return fmt.Sprintf("Usage: %sremind [arg]\nInvoked without arguments returns the status of current session.\n List of args:\nstart - Starts a session\npause - Pauses a session\nresume - resumes a session\nstop - Stops a session\nadd [task] - Appends [task] to the current session", commandChar)
 }
 
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {

@@ -11,6 +11,7 @@ build_plugins:
 	go build -buildmode=plugin -o bin/plugins/pick.so plugins/pick/pick.go
 	go build -buildmode=plugin -o bin/plugins/trivia.so plugins/trivia/*
 	go build -buildmode=plugin -o bin/plugins/session_tracker.so plugins/session_tracker/*
+	go build -buildmode=plugin -o bin/plugins/help.so plugins/help/help.go
 
 build_test_plugins:
 	go build -buildmode=plugin -o test_plugins/bin/naughty.so test_plugins/naughty/naughty.go

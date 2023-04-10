@@ -152,7 +152,7 @@ func (e *Event) GetStanza() interface{} {
 }
 
 type Reply struct {
-	Payload      map[string]interface{}
+	Payload map[string]interface{}
 }
 
 // Data access interface for text-based commands to answer a suitable message.

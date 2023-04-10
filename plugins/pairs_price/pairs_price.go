@@ -33,6 +33,12 @@ func (p plugin) Description() string {
 	return "Provides price equivalences of crypto assets"
 }
 
+func (p plugin) Help() string {
+	reply := g.Publish(gofra.Event{Name: "command/getCommandChar", MB: gofra.MessageBody{}, Payload: nil})
+	commandChar := reply.GetAnswer()
+	return fmt.Sprintf("Usage: %sprice btcusd -> btcusd: 37567, %sprice btceur -> btceur: 33314.3", commandChar, commandChar)
+}
+
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
 
