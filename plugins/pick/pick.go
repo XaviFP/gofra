@@ -27,6 +27,12 @@ func (p plugin) Description() string {
 	return "Picks among a given list"
 }
 
+func (p plugin) Help() string {
+	reply := g.Publish(gofra.Event{Name: "command/getCommandChar", MB: gofra.MessageBody{}, Payload: nil})
+	commandChar := reply.GetAnswer()
+	return fmt.Sprintf("Usage:\n %spick Tokyo, Osaka, Kyoto -> Chose: Osaka\n%spick 2 Strawberry, Chocolate, Vanilla, Caramel -> Chose: Caramel and Vanilla", commandChar, commandChar)
+}
+
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
 
