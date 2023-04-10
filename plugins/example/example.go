@@ -26,6 +26,13 @@ func (p plugin) Description() string {
 	return "Example plugin"
 }
 
+func (p plugin) Help() string {
+	// if the plugin is a command the following provides information on how to use it
+	reply := g.Publish(gofra.Event{Name: "command/getCommandChar", MB: gofra.MessageBody{}, Payload: nil})
+	commandChar := reply.GetAnswer()
+	return fmt.Sprintf("Usage: %sexampleplugin first_argument second_argument ...", commandChar)
+}
+
 func (p plugin) Init(conf gofra.Config, api *gofra.Gofra) {
 	g = api
 	config = conf
