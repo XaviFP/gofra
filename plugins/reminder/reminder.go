@@ -44,6 +44,12 @@ func (p plugin) Description() string {
 	return "Reminds you or another recipient of something you noted"
 }
 
+func (p plugin) Help() string {
+	reply := g.Publish(gofra.Event{Name: "command/getCommandChar", MB: gofra.MessageBody{}, Payload: nil})
+	commandChar := reply.GetAnswer()
+	return fmt.Sprintf("Usage: Format %sremind [nick] [text to remind] [time to remind]\n[nick] can be omitted on 1 to 1 converstation with the bot. \"me\" can be used in a MUC setting if reminder is for oneself. \n Example: \n%sremind me call the mechanic in one second -> Reminder added", commandChar, commandChar)
+}
+
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
 	g.Subscribe(
