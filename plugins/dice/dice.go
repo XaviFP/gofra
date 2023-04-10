@@ -36,6 +36,12 @@ func (p plugin) Description() string {
 	return "Provides dice throwing results"
 }
 
+func (p plugin) Help() string {
+	reply := g.Publish(gofra.Event{Name: "command/getCommandChar", MB: gofra.MessageBody{}, Payload: nil})
+	commandChar := reply.GetAnswer()
+	return fmt.Sprintf("Usage: Format is [number of dice]d[number of faces]\n For example: %sdice -> 1d6: 6, %sdice 3d20 -> 3d20: 17, 6, 16", commandChar, commandChar)
+}
+
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
 	config = c
