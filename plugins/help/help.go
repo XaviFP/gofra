@@ -36,7 +36,7 @@ func (p plugin) Description() string {
 func (p plugin) Help() string {
 	reply := g.Publish(gofra.Event{Name: "command/getCommandChar", MB: gofra.MessageBody{}, Payload: nil})
 	commandChar := reply.GetAnswer()
-	return fmt.Sprintf("Usage: %shelp -> 1d6: 6, %sdice 3d20 -> 3d20: 17, 6, 16", commandChar, commandChar)
+	return fmt.Sprintf("Usage: %shelp [plugin]\nFor a list of plugins invoke without arguments", commandChar)
 }
 
 func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
