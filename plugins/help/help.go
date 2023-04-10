@@ -58,16 +58,16 @@ func handleCommand(e gofra.Event) *gofra.Reply {
 	// invoked without args provides list of plugins and their description
 	if len(args) == 0 {
 		for name, plugin := range plugins {
-			answer.WriteString(fmt.Sprintf("%s: %s\n",name, plugin.Description()))
+			answer.WriteString(fmt.Sprintf("%s: %s\n", name, plugin.Description()))
 		}
 		if err := g.SendStanza(e.MB.Reply(answer.String())); err != nil {
 			g.Logger.Error(err.Error())
-	
+
 			return nil
 		}
 	}
 
-	for _,arg := range args {
+	for _, arg := range args {
 		p, exists := plugins[arg]
 		if !exists {
 			answer.WriteString(fmt.Sprintf("Plugin %s not found\n", arg))
@@ -76,7 +76,7 @@ func handleCommand(e gofra.Event) *gofra.Reply {
 
 		answer.WriteString(fmt.Sprintf("%s: %s\n", arg, p.Help()))
 	}
-	
+
 	if err := g.SendStanza(e.MB.Reply(answer.String())); err != nil {
 		g.Logger.Error(err.Error())
 
