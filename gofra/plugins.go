@@ -11,6 +11,7 @@ import (
 type Plugin interface {
 	Name() string
 	Description() string
+	Help() string
 	Init(Config, *Gofra)
 }
 
