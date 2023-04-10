@@ -161,6 +161,10 @@ func (g *Gofra) Init() error {
 	return nil
 }
 
+func (g *Gofra) GetPlugins() Plugins{
+	return g.plugins
+}
+
 func (g *Gofra) Connect() error {
 	// Send initial presence
 	err := g.Client.Send(g.Context, stanza.Presence{Type: stanza.AvailablePresence}.Wrap(nil))
