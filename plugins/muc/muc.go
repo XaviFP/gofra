@@ -32,6 +32,10 @@ func (p plugin) Description() string {
 	return "Handles multi user chat rooms"
 }
 
+func (p plugin) Help() string {
+	return "MUC is a meta-plugin and does not expose user-triggered interaction"
+}
+
 func (p plugin) Init(conf gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
 	config = conf

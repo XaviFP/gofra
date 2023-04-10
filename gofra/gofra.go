@@ -111,7 +111,8 @@ For accumulative handlers, that is, handlers that take the original set of value
 the event and pass on a modified set, there's the chain option. Handlers set to chain
 are executed after all non-accumulative ones by descending priority order. Accumulated
 event values are received through the event pointer argument where changes are expecteted
-to be performed in order for the following chained handlers to recieve them. */
+to be performed in order for the following chained handlers to recieve them.
+*/
 func (g *Gofra) Subscribe(eventName, pluginName string, handler Handler, priority int) {
 	g.Logger.Debug("Plugin " + pluginName + " subscribed handler to event " + eventName)
 	g.em.Subscribe(eventName, pluginName, handler, nil, priority)
@@ -159,6 +160,10 @@ func (g *Gofra) Init() error {
 	g.Publish(Event{Name: "initialized"})
 
 	return nil
+}
+
+func (g *Gofra) GetPlugins() Plugins {
+	return g.plugins
 }
 
 func (g *Gofra) Connect() error {
