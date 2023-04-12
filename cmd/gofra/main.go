@@ -15,7 +15,7 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/XaviFP/gofra/gofra"
+	"github.com/XaviFP/gofra/internal/gofra"
 )
 
 var config gofra.Config
