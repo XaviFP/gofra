@@ -1,5 +1,5 @@
 build:
-	go build -o bin/gofra cmd/gofra/main.go
+	go build -o bin/gofra .
 
 build_plugins:
 	go build -buildmode=plugin -o bin/plugins/cryptoasset_info.so plugins/cryptoasset_info/cryptoasset_info.go
