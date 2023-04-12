@@ -1,5 +1,5 @@
 build:
-	go build -o bin/gofra .
+	go build -o bin/gofra cmd/gofra/main.go
 
 build_plugins:
 	go build -buildmode=plugin -o bin/plugins/cryptoasset_info.so plugins/cryptoasset_info/cryptoasset_info.go
@@ -21,4 +21,4 @@ build_test_plugins:
 all: build build_plugins
 
 test: build_test_plugins
-	go test -p=1 -coverprofile=coverage.out gofra/*.go && go tool cover -html=coverage.out
+	go test -p=1 -coverprofile=coverage.out *.go && go tool cover -html=coverage.out
