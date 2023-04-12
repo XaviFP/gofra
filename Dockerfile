@@ -1,5 +1,6 @@
 FROM ubuntu
 
-COPY gofra/bin /bin
+COPY bin /bin
+ADD config.yaml ./config.yaml
 
 ENTRYPOINT [ "bin/gofra" ]
