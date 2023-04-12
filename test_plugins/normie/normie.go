@@ -5,7 +5,7 @@ normie is a gofra plugin.
 package main
 
 import (
-	"github.com/XaviFP/gofra/gofra"
+	"github.com/XaviFP/gofra/internal"
 )
 
 var Plugin plugin
@@ -17,6 +17,10 @@ func (p plugin) Name() string {
 }
 
 func (p plugin) Description() string {
+	return "Just hanging 'round y'know?"
+}
+
+func (p plugin) Help() string {
 	return "Just hanging 'round y'know?"
 }
 

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/XaviFP/gofra/gofra"
+	"github.com/XaviFP/gofra/internal"
 )
 
 var Plugin plugin
