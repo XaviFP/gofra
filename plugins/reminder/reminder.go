@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/olebedev/when"
@@ -23,6 +24,7 @@ var Plugin plugin
 
 var g *gofra.Gofra
 var reminders []reminder
+var mutReminders sync.Mutex
 var occupants = make(map[string][]string)
 var w = when.New(nil)
 
@@ -72,11 +74,11 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 func (p plugin) Run() {
 	for {
 		time.Sleep(1 * time.Second)
-
 		if len(reminders) < 1 {
 			continue
 		}
 
+		mutReminders.Lock()
 		rmdr := reminders[0]
 		if rmdr.time > time.Now().Unix() {
 			continue
@@ -92,6 +94,7 @@ func (p plugin) Run() {
 		}
 
 		reminders, _ = pop(reminders)
+		mutReminders.Unlock()
 	}
 }
 
@@ -169,10 +172,12 @@ func isOccupant(room, occupant string) (int, bool) {
 }
 
 func addReminder(rmdr reminder) {
+	mutReminders.Lock()
 	reminders = append(reminders, rmdr)
 	sort.Slice(reminders, func(i, j int) bool {
 		return reminders[i].time < reminders[j].time
 	})
+	mutReminders.Unlock()
 }
 
 func pop(reminders []reminder) ([]reminder, reminder) {
