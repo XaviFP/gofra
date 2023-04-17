@@ -5,8 +5,11 @@ remind is a gofra plugin that allows users to set text-based reminders for thems
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -69,6 +72,7 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 
 	w.Add(en.All...)
 	w.Add(common.All...)
+	loadState()
 }
 
 func (p plugin) Run() {
@@ -79,6 +83,8 @@ func (p plugin) Run() {
 		}
 
 		mutReminders.Lock()
+		defer mutReminders.Unlock()
+
 		rmdr := reminders[0]
 		if rmdr.time > time.Now().Unix() {
 			continue
@@ -94,7 +100,7 @@ func (p plugin) Run() {
 		}
 
 		reminders, _ = pop(reminders)
-		mutReminders.Unlock()
+		persistState()
 	}
 }
 
@@ -144,7 +150,11 @@ func handleReminder(e gofra.Event) *gofra.Reply {
 		msg:     answer,
 		msgType: msg.Type,
 	}
+
+	mutReminders.Lock()
 	addReminder(rmdr)
+	persistState()
+	mutReminders.Unlock()
 
 	if err := g.SendStanza(e.MB.Reply("Reminder added")); err != nil {
 		g.Logger.Error(err.Error())
@@ -172,14 +182,88 @@ func isOccupant(room, occupant string) (int, bool) {
 }
 
 func addReminder(rmdr reminder) {
-	mutReminders.Lock()
 	reminders = append(reminders, rmdr)
 	sort.Slice(reminders, func(i, j int) bool {
 		return reminders[i].time < reminders[j].time
 	})
-	mutReminders.Unlock()
 }
 
 func pop(reminders []reminder) ([]reminder, reminder) {
 	return reminders[1:], reminders[0]
+}
+
+func persistState() {
+	var state strings.Builder
+	for _, reminder := range reminders {
+		state.WriteString(fmt.Sprintf("%d %s %s %s %s\n", reminder.time, reminder.msgType, reminder.from, reminder.to, reminder.msg))
+	}
+
+	file, err := os.Create("reminders.txt")
+	if err != nil {
+		g.Logger.Error(err.Error())
+		return
+	}
+	defer file.Close()
+
+	_, err = file.WriteString(state.String())
+	if err != nil {
+		g.Logger.Error(err.Error())
+	}
+}
+
+func loadState() {
+	file, err := os.Open("reminders.txt")
+	if err != nil {
+		g.Logger.Error(err.Error())
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	mutReminders.Lock()
+	defer mutReminders.Unlock()
+
+	for scanner.Scan() {
+		args := strings.Fields(scanner.Text())
+		if len(args) < 5 {
+			continue
+		}
+
+		time, err := strconv.ParseInt(args[0], 10, 64)
+		if err != nil {
+			continue
+		}
+
+		msgType := stanza.MessageType(args[1])
+
+		from, err := jid.Parse(args[2])
+		if err != nil {
+			continue
+		}
+
+		to, err := jid.Parse(args[3])
+		if err != nil {
+			continue
+		}
+
+		msg := strings.Join(args[4:], " ")
+
+		rmdr := reminder{
+			time,
+			to,
+			from,
+			msg,
+			msgType,
+		}
+
+		addReminder(rmdr)
+
+	}
+	// Handle reason of stop
+	if err := scanner.Err(); err != nil {
+		g.Logger.Error("Broken file stream " + err.Error())
+		return
+	}
+	// If error is nil means error was EOF
 }
