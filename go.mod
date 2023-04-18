@@ -1,6 +1,6 @@
 module github.com/XaviFP/gofra
 
-go 1.19
+go 1.20
 
 require (
 	github.com/juju/errors v1.0.0
