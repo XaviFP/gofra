@@ -5,8 +5,11 @@ remind is a gofra plugin that allows users to set text-based reminders for thems
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +26,9 @@ var Plugin plugin
 
 var g *gofra.Gofra
 var reminders []reminder
+var dueReminders = make(chan reminder, 10)
+var newReminders = make(chan reminder, 10)
+var sendReminders = make(chan reminder, 10)
 var occupants = make(map[string][]string)
 var w = when.New(nil)
 
@@ -67,31 +73,19 @@ func (p plugin) Init(c gofra.Config, gofra *gofra.Gofra) {
 
 	w.Add(en.All...)
 	w.Add(common.All...)
+	go reminderMonitor()
+	go loadState()
 }
 
 func (p plugin) Run() {
-	for {
-		time.Sleep(1 * time.Second)
-
-		if len(reminders) < 1 {
-			continue
-		}
-
-		rmdr := reminders[0]
-		if rmdr.time > time.Now().Unix() {
-			continue
-		}
+	for rmdr := range sendReminders {
 
 		r := gofra.MessageBody{Message: stanza.Message{Type: rmdr.msgType, To: rmdr.to.Bare()}, Body: rmdr.msg}
 
 		err := g.SendStanza(r)
 		if err != nil {
 			g.Logger.Error(fmt.Sprintf("Error encoding message in Run() method of reminder Plugin: %v", err))
-
-			continue
 		}
-
-		reminders, _ = pop(reminders)
 	}
 }
 
@@ -141,7 +135,8 @@ func handleReminder(e gofra.Event) *gofra.Reply {
 		msg:     answer,
 		msgType: msg.Type,
 	}
-	addReminder(rmdr)
+
+	newReminders <- rmdr
 
 	if err := g.SendStanza(e.MB.Reply("Reminder added")); err != nil {
 		g.Logger.Error(err.Error())
@@ -173,8 +168,126 @@ func addReminder(rmdr reminder) {
 	sort.Slice(reminders, func(i, j int) bool {
 		return reminders[i].time < reminders[j].time
 	})
+	g.Logger.Info(fmt.Sprintf("REMINDER ADDED %v", rmdr))
 }
 
-func pop(reminders []reminder) ([]reminder, reminder) {
-	return reminders[1:], reminders[0]
+func pop(rmdr reminder) {
+	var index int
+	for i, reminder := range reminders {
+		if reminder.time == rmdr.time &&
+			reminder.msg == rmdr.msg &&
+			reminder.msgType == rmdr.msgType {
+			index = i
+		}
+	}
+	g.Logger.Info(fmt.Sprintf("REMINDER REMOVED %v", reminders[index]))
+	if index == 0 {
+		reminders = reminders[1:]
+	} else if index == len(reminders)-1 {
+		reminders = reminders[:len(reminders)-1]
+	} else {
+		reminders = append(reminders[:index], reminders[index+1:]...)
+	}
+}
+
+func persistState() {
+	g.Logger.Info("INTO PERSIST STATE")
+	var state strings.Builder
+	for _, reminder := range reminders {
+		state.WriteString(fmt.Sprintf("%d %s %s %s %s\n", reminder.time, reminder.msgType, reminder.from, reminder.to, reminder.msg))
+	}
+
+	file, err := os.Create("/data/reminders.txt")
+	if err != nil {
+		g.Logger.Error(err.Error())
+		return
+	}
+	g.Logger.Info("OPENED FILE SUCCESSFULLY")
+	defer file.Close()
+
+	_, err = file.WriteString(state.String())
+	if err != nil {
+		g.Logger.Error(err.Error())
+	}
+	g.Logger.Info("GOING OUT OF PERSIST STATE")
+}
+
+func loadState() {
+	file, err := os.Open("/data/reminders.txt")
+	if err != nil {
+		g.Logger.Error(err.Error())
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		args := strings.Fields(scanner.Text())
+		if len(args) < 5 {
+			continue
+		}
+
+		time, err := strconv.ParseInt(args[0], 10, 64)
+		if err != nil {
+			continue
+		}
+
+		msgType := stanza.MessageType(args[1])
+
+		from, err := jid.Parse(args[2])
+		if err != nil {
+			continue
+		}
+
+		to, err := jid.Parse(args[3])
+		if err != nil {
+			continue
+		}
+
+		msg := strings.Join(args[4:], " ")
+
+		rmdr := reminder{
+			time,
+			to,
+			from,
+			msg,
+			msgType,
+		}
+		g.Logger.Info(fmt.Sprintf("REMINDER LOADED FROM FILESYSTEM %v", rmdr))
+		addReminder(rmdr)
+		go waitTimer(rmdr)
+	}
+	// Handle reason of stop
+	if err := scanner.Err(); err != nil {
+		g.Logger.Error("Broken file stream " + err.Error())
+		return
+	}
+	// If error is nil means error was EOF
+}
+
+func reminderMonitor() {
+	for {
+		select {
+		case rmdr := <-newReminders:
+			addReminder(rmdr)
+			go waitTimer(rmdr)
+			persistState()
+		case rmdr := <-dueReminders:
+			pop(rmdr)
+			persistState()
+			sendReminders <- rmdr
+		}
+	}
+}
+
+func waitTimer(rmdr reminder) {
+	var tmr *time.Timer
+	if rmdr.time <= time.Now().Unix() {
+		tmr = time.NewTimer(time.Unix(time.Now().Unix()+1, 0).Sub(time.Now()))
+	} else {
+		tmr = time.NewTimer(time.Unix(rmdr.time, 0).Sub(time.Now()))
+	}
+	<-tmr.C
+	dueReminders <- rmdr
 }
