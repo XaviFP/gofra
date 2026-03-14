@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"sort"
+
+	"mellium.im/xmlstream"
 )
 
 type Handler func(event Event) *Reply
@@ -128,9 +130,10 @@ func (em EventManager) sort(eventName string) {
 }
 
 type Event struct {
-	Name    string
-	MB      MessageBody
-	Payload map[string]interface{}
+	Name        string
+	MB          MessageBody
+	Payload     map[string]interface{}
+	iqEncoder   xmlstream.TokenWriter // For IQ responses, write here instead of session
 }
 
 func (e *Event) SetStanza(stanza interface{}) {
@@ -149,6 +152,39 @@ func (e *Event) GetStanza() interface{} {
 		return nil
 	}
 	return stanza
+}
+
+func (e *Event) GetIQ() (IQ, error) {
+	s := e.GetStanza()
+	if s == nil {
+		return IQ{}, fmt.Errorf("no stanza found")
+	}
+
+	iq, ok := s.(IQ)
+	if !ok {
+		return IQ{}, fmt.Errorf("stanza is not an IQ")
+	}
+
+	return iq, nil
+}
+
+// MarkHandled marks this event as handled, preventing the mux from
+// sending a service-unavailable error for IQ stanzas.
+func (e *Event) MarkHandled() {
+	if e.Payload == nil {
+		e.Payload = make(map[string]interface{})
+	}
+	e.Payload["handled"] = true
+}
+
+// SetIQEncoder sets the encoder for IQ responses.
+func (e *Event) SetIQEncoder(enc xmlstream.TokenWriter) {
+	e.iqEncoder = enc
+}
+
+// GetIQEncoder returns the encoder for IQ responses.
+func (e *Event) GetIQEncoder() xmlstream.TokenWriter {
+	return e.iqEncoder
 }
 
 type Reply struct {

@@ -106,7 +106,24 @@ The following list covers the current available events published by Gofra and it
 - muc/occupantJoinedMuc
 - muc/occupantLeftMuc
 - muc/occupants
+- adhoc/register
+- adhoc/unregister
 
+## Ad-Hoc Commands (XEP-0050)
+
+Gofra supports [XEP-0050 Ad-Hoc Commands](https://xmpp.org/extensions/xep-0050.html), enabling XMPP clients to discover and execute commands with interactive forms.
+
+See [plugins/greeting/greeting.go](plugins/greeting/greeting.go) for a complete example demonstrating:
+- Registering commands via `adhoc/register` event
+- Multi-stage forms with session data
+- Form building with `NewFormBuilder()`
+- Action buttons (next, prev, complete)
+
+Key types in `internal/adhoc.go`:
+- `AdHocCommand` - Command definition with Node, Name, and Handler
+- `CommandHandler` - Handler signature: `func(session, action, formData) (*CommandResponse, error)`
+- `CommandSession` - Session with `Stage` int and `Get/Set` for custom data
+- `CommandResponse` - Response with Status, Actions, Form, and Notes
 
 ## Commands usage
 

@@ -1,6 +1,7 @@
 package gofra
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/xml"
@@ -27,6 +28,7 @@ type API interface {
 	Publish(event Event) Reply
 	SetPriority(eventName, pluginName string, priority int) error
 	SendStanza(stanza interface{}) error
+	SendIQResponse(e Event, response interface{}) error
 	AddMuxOption(o mux.Option)
 	AddMuxOptions(opts []mux.Option)
 }
@@ -72,6 +74,8 @@ func NewGofra(ctx context.Context, config Config) *Gofra {
 		mux.Presence(stanza.UnavailablePresence, xml.Name{}, stanzaHandler),
 		mux.Message(stanza.ChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler),
 		mux.Message(stanza.GroupChatMessage, xml.Name{Space: "jabber:client", Local: "body"}, stanzaHandler),
+		mux.IQ(stanza.GetIQ, xml.Name{}, stanzaHandler),
+		mux.IQ(stanza.SetIQ, xml.Name{}, stanzaHandler),
 	}
 
 	mucNicks = make(map[string]string)
@@ -102,6 +106,54 @@ func (g *Gofra) SendMessage(to, body string, msgType stanza.MessageType) error {
 
 func (g *Gofra) SendStanza(s interface{}) error {
 	return g.Client.Encode(g.Context, s)
+}
+
+// SendIQResponse writes an IQ response using the encoder from the event.
+//
+// This MUST be used when responding to incoming IQ stanzas (type="get" or "set")
+// instead of SendStanza. The mellium xmpp.Session wraps the encoder passed to
+// handlers with a responseChecker that tracks whether a response was written.
+// When EncodeToken sees an IQ element with matching ID and response type
+// (result/error), it sets wroteResp=true. After the handler returns, if no
+// response was detected, session.go sends an automatic <service-unavailable/>.
+//
+// Using SendStanza writes directly to the session, bypassing the responseChecker
+// wrapper entirely - so a valid response goes out, but wroteResp stays false,
+// and mellium sends service-unavailable afterwards.
+//
+// See: https://codeberg.org/mellium/xmpp/src/tag/v0.21.4/session.go#L663
+//
+// Use SendStanza for: messages, presence, and IQs you initiate.
+// Use SendIQResponse for: responses to incoming IQs (e.g., ad-hoc commands).
+func (g *Gofra) SendIQResponse(e Event, response interface{}) error {
+	enc := e.GetIQEncoder()
+	if enc == nil {
+		// Fallback to session if no encoder (shouldn't happen for IQs)
+		return g.Client.Encode(g.Context, response)
+	}
+
+	// Marshal the response to XML and write tokens to the encoder
+	data, err := xml.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("error marshaling response: %w", err)
+	}
+
+	// Parse the XML and write tokens
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	for {
+		tok, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("error reading token: %w", err)
+		}
+		if err := enc.EncodeToken(tok); err != nil {
+			return fmt.Errorf("error encoding token: %w", err)
+		}
+	}
+
+	return nil
 }
 
 /*

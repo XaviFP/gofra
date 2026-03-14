@@ -7,7 +7,7 @@ package main
 import (
 	"strings"
 
-	"github.com/XaviFP/gofra/internal"
+	gofra "github.com/XaviFP/gofra/internal"
 )
 
 var Plugin plugin
