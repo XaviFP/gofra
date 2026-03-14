@@ -230,7 +230,7 @@ type XDataOption struct {
 }
 
 func (h stanzaHandler) HandleIQ(iq stanza.IQ, t xmlstream.TokenReadEncoder, start *xml.StartElement) error {
-	h.logger.Debug(fmt.Sprintf("IQ received: %s %v", start.Name.Local, start.Attr))
+	h.logger.Debug(fmt.Sprintf("IQ received: id=%s type=%s child=%s attrs=%v", iq.ID, iq.Type, start.Name.Local, start.Attr))
 
 	d := xml.NewTokenDecoder(t)
 	gIQ := IQ{IQ: iq}
