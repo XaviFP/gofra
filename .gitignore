@@ -12,3 +12,6 @@
 
 # Gofra project binary output
 bin/**
+
+# Configuration with credentials
+config.yaml
