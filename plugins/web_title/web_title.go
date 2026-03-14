@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"time"
 
 	gofra "github.com/XaviFP/gofra/internal"
 )
@@ -27,6 +28,8 @@ func (p plugin) Help() string {
 	return "Writes back title of websites if message contains url and website's url has a title"
 }
 
+var seen = make(map[string]time.Time)
+
 func (p plugin) Init(config gofra.Config, gofra *gofra.Gofra) {
 	g = gofra
 
@@ -36,6 +39,17 @@ func (p plugin) Init(config gofra.Config, gofra *gofra.Gofra) {
 		handleMessage,
 		1,
 	)
+
+	go func() {
+		for {
+			time.Sleep(30 * time.Minute)
+			for url, t := range seen {
+				if time.Since(t) > time.Hour {
+					delete(seen, url)
+				}
+			}
+		}
+	}()
 }
 
 func handleMessage(e gofra.Event) *gofra.Reply {
@@ -58,6 +72,8 @@ func handleMessage(e gofra.Event) *gofra.Reply {
 
 		return nil
 	}
+
+	seen[url] = time.Now()
 
 	return nil
 }

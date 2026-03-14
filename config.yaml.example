@@ -1,0 +1,21 @@
+jid: "bot@example.com"
+password: "YOUR_PASSWORD_HERE"
+nick: "BotNick"
+debug: true
+logXML: true
+skipSRV: true
+pluginPaths:
+  - "bin/plugins/"
+
+mucs:
+  - mucNick: "BotNick"
+    mucJoinHistory: 0
+    mucJid: ""
+    mucPassword: ""
+
+plugins:
+  Commands:
+    commandChar: "!"
+  Dice:
+    faces: 6
+    quantity: 1

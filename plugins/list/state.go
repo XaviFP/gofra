@@ -10,7 +10,7 @@ type List struct {
 }
 
 // {room: {list_name: list}
-type State map[string]map[string]*List 
+type State map[string]map[string]*List
 
 func (s State) addItem(room, listName, item string) {
 	s[room][listName].addItem(item)
@@ -20,16 +20,32 @@ func (s State) delItem(room, listName string, id int) {
 	s[room][listName].delItem(id)
 }
 
+func (s State) markDone(room, listName string, id int) {
+	if roomLists, ok := s[room]; ok {
+		if list, ok := roomLists[listName]; ok {
+			list.markDone(id)
+		}
+	}
+}
+
 func (s State) show(room, listName string) string {
 	return s[room][listName].show()
 }
 
 func (s State) showAll(room string) string {
-	var lists strings.Builder
-	for listName := range s[room] {
-		lists.WriteString(listName + "\n")
+	var result strings.Builder
+	for listName, list := range s[room] {
+		result.WriteString(fmt.Sprintf("📋 %s:\n", listName))
+		if len(list.Items) == 0 {
+			result.WriteString("   (empty)\n")
+		} else {
+			for i, item := range list.Items {
+				result.WriteString(fmt.Sprintf("   %d. %s\n", i, item))
+			}
+		}
+		result.WriteString("\n")
 	}
-	return lists.String()
+	return strings.TrimSuffix(result.String(), "\n")
 }
 
 func (s State) newList(room, listName string) {
@@ -48,6 +64,17 @@ func (l *List) delItem(id int) {
 		return
 	}
 	l.Items = append(l.Items[:id], l.Items[id+1:]...)
+}
+
+func (l *List) markDone(id int) {
+	if id < 0 || id >= len(l.Items) {
+		return
+	}
+	item := l.Items[id]
+	// Don't add checkmark if already marked
+	if !strings.HasPrefix(item, "✓ ") {
+		l.Items[id] = "✓ " + item
+	}
 }
 
 func (l *List) show() string {

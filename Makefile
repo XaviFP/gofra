@@ -16,6 +16,8 @@ build_plugins:
 	go build -buildmode=plugin -o bin/plugins/list.so plugins/list/* ;
 	go build -buildmode=plugin -o bin/plugins/help.so plugins/help/help.go ;
 	go build -buildmode=plugin -o bin/plugins/web_title.so plugins/web_title/web_title.go ;
+	go build -buildmode=plugin -o bin/plugins/adhoc.so plugins/adhoc/adhoc.go ;
+	go build -buildmode=plugin -o bin/plugins/greeting.so plugins/greeting/greeting.go ;
 
 build_test_plugins:
 	go build -buildmode=plugin -o test_plugins/bin/naughty.so test_plugins/naughty/naughty.go
