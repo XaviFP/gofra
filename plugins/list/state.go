@@ -10,7 +10,7 @@ type List struct {
 }
 
 // {room: {list_name: list}
-type State map[string]map[string]*List 
+type State map[string]map[string]*List
 
 func (s State) addItem(room, listName, item string) {
 	s[room][listName].addItem(item)
@@ -33,11 +33,19 @@ func (s State) show(room, listName string) string {
 }
 
 func (s State) showAll(room string) string {
-	var lists strings.Builder
-	for listName := range s[room] {
-		lists.WriteString(listName + "\n")
+	var result strings.Builder
+	for listName, list := range s[room] {
+		result.WriteString(fmt.Sprintf("📋 %s:\n", listName))
+		if len(list.Items) == 0 {
+			result.WriteString("   (empty)\n")
+		} else {
+			for i, item := range list.Items {
+				result.WriteString(fmt.Sprintf("   %d. %s\n", i, item))
+			}
+		}
+		result.WriteString("\n")
 	}
-	return lists.String()
+	return strings.TrimSuffix(result.String(), "\n")
 }
 
 func (s State) newList(room, listName string) {
